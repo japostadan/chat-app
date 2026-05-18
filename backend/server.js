@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { createStore } = require('./store');
 
 const app = express();
@@ -7,6 +8,7 @@ const store = createStore();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 app.get('/messages', (req, res) => {
   res.json(store.getAll());
