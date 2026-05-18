@@ -26,14 +26,14 @@ function createStore() {
       return msg;
     },
 
-    add({ text, author, pending = false }) {
+    add({ text, author, pending = false, replyTo = null }) {
       const msg = {
         id: randomUUID(),
         text,
         author,
         likes: 0,
         dislikes: 0,
-        replyTo: null,
+        replyTo,
         scheduledFor: null,
         pending,
         createdAt: Date.now(),

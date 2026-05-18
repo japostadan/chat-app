@@ -46,6 +46,17 @@ describe('POST /messages', () => {
       .send({ text: 'hello' });
     expect(res.status).toBe(400);
   });
+
+  it('stores replyTo when provided', async () => {
+    const parent = await request(app)
+      .post('/messages')
+      .send({ text: 'parent', author: 'alice' });
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'reply', author: 'bob', replyTo: parent.body.id });
+    expect(res.status).toBe(201);
+    expect(res.body.replyTo).toBe(parent.body.id);
+  });
 });
 
 describe('POST /messages/:id/like', () => {

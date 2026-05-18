@@ -22,6 +22,7 @@
   <h1>Chat</h1>
 
   <form id="message-form">
+    <div id="reply-indicator" style="display:none; font-size:0.85rem; color:#555;"></div>
     <input id="author" type="text" placeholder="Your name" required>
     <textarea id="text" placeholder="Message" required></textarea>
     <button type="submit">Send</button>
@@ -31,23 +32,47 @@
 
   <script>
     const API = '';
+    let replyingTo = null;
 
     function formatTime(ts) {
       return new Date(ts).toLocaleTimeString();
     }
 
+    function setReplyingTo(id, author) {
+      replyingTo = { id, author };
+      const indicator = document.getElementById('reply-indicator');
+      indicator.style.display = 'block';
+      indicator.innerHTML = `Replying to <strong>${escapeHtml(author)}</strong> — <a href="#" onclick="cancelReply(event)">cancel</a>`;
+      document.getElementById('text').focus();
+    }
+
+    function cancelReply(e) {
+      if (e) e.preventDefault();
+      replyingTo = null;
+      const indicator = document.getElementById('reply-indicator');
+      indicator.style.display = 'none';
+      indicator.innerHTML = '';
+    }
+
     function renderMessages(messages) {
+      const byId = Object.fromEntries(messages.map(m => [m.id, m]));
       const list = document.getElementById('messages');
-      list.innerHTML = messages.map(m => `
+      list.innerHTML = messages.map(m => {
+        const parentLine = m.replyTo && byId[m.replyTo]
+          ? `<div style="font-size:0.8rem;color:#888;border-left:2px solid #ccc;padding-left:0.5rem;margin-bottom:0.25rem;">↩ ${escapeHtml(byId[m.replyTo].author)}: ${escapeHtml(byId[m.replyTo].text)}</div>`
+          : '';
+        return `
         <li>
+          ${parentLine}
           <strong>${escapeHtml(m.author)}</strong>: ${escapeHtml(m.text)}
           <div class="meta">
             <button onclick="react('${escapeHtml(m.id)}', 'like')">👍 ${m.likes}</button>
             <button onclick="react('${escapeHtml(m.id)}', 'dislike')">👎 ${m.dislikes}</button>
+            <button class="reply-btn" data-id="${escapeHtml(m.id)}" data-author="${escapeHtml(m.author)}">↩ Reply</button>
             &nbsp; ${formatTime(m.createdAt)}
           </div>
-        </li>
-      `).join('');
+        </li>`;
+      }).join('');
     }
 
     async function react(id, action) {
@@ -90,18 +115,27 @@
         return;
       }
 
+      const body = { author, text };
+      if (replyingTo) body.replyTo = replyingTo.id;
+
       const res = await fetch(`${API}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ author, text }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
         document.getElementById('text').value = '';
+        cancelReply();
         await loadMessages();
       } else {
         alert('Failed to send message. Please try again.');
       }
+    });
+
+    document.getElementById('messages').addEventListener('click', (e) => {
+      const btn = e.target.closest('.reply-btn');
+      if (btn) setReplyingTo(btn.dataset.id, btn.dataset.author);
     });
 
     loadMessages();
