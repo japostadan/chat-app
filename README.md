@@ -85,6 +85,7 @@ Like and dislike are separate action endpoints (not PATCH) because the client tr
 | Backend | Node.js + Express | Familiar, minimal, maps directly to our endpoints |
 | Frontend | Vanilla HTML/CSS/JS | No framework hiding the HTTP concepts we're learning |
 | Storage | In-memory array | Keeps focus on the problem, not persistence |
+| Package manager | pnpm | Used throughout; run `pnpm install` inside `backend/` |
 
 ---
 
@@ -99,12 +100,23 @@ Like and dislike are separate action endpoints (not PATCH) because the client tr
 
 ---
 
+## Getting Started
+
+```bash
+cd backend
+pnpm install
+node server.js        # starts on http://localhost:3000
+pnpm test             # run unit + integration tests
+```
+
+---
+
 ## Build Order
 
 Build backend first. Test each endpoint with `curl` before touching the frontend. This way if something breaks later, you know whether the bug is in the server or the browser.
 
-1. `GET /messages` — returns empty array
-2. `POST /messages` — adds a message to the array
+1. ✅ `GET /messages` — returns empty array
+2. ✅ `POST /messages` — adds a message to the array
 3. `POST /messages/:id/like` and `/dislike`
 4. Scheduling — `setInterval` on server, `pending` flag on message
 5. Frontend — HTML page that calls the API
@@ -118,7 +130,11 @@ Build backend first. Test each endpoint with `curl` before touching the frontend
 ```
 chat-app/
 ├── backend/
-│   └── server.js
+│   ├── server.js          # Express app — thin route layer
+│   ├── server.test.js     # Integration tests (supertest)
+│   ├── store.js           # In-memory messages store
+│   ├── store.test.js      # Unit tests for the store
+│   └── package.json
 ├── frontend/
 │   └── index.html
 └── README.md
