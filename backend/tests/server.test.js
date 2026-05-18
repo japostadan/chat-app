@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('./server');
+const app = require('../server');
 
 describe('GET /messages', () => {
   it('returns an empty array on a fresh server', async () => {

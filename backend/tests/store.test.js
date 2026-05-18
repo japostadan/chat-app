@@ -1,4 +1,4 @@
-const { createStore } = require('./store');
+const { createStore } = require('../store');
 
 describe('messages store', () => {
   let store;

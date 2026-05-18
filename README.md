@@ -130,10 +130,11 @@ Build backend first. Test each endpoint with `curl` before touching the frontend
 ```
 chat-app/
 ├── backend/
-│   ├── server.js          # Express app — thin route layer
-│   ├── server.test.js     # Integration tests (supertest)
-│   ├── store.js           # In-memory messages store
-│   ├── store.test.js      # Unit tests for the store
+│   ├── tests/
+│   │   ├── server.test.js  # Integration tests (supertest)
+│   │   └── store.test.js   # Unit tests for the store
+│   ├── server.js           # Express app — thin route layer
+│   ├── store.js            # In-memory messages store
 │   └── package.json
 ├── frontend/
 │   └── index.html
