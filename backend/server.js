@@ -23,6 +23,18 @@ app.post('/messages', (req, res) => {
   res.status(201).json(msg);
 });
 
+app.post('/messages/:id/like', (req, res) => {
+  const msg = store.incrementLikes(req.params.id);
+  if (!msg) return res.status(404).json({ error: 'message not found' });
+  res.json(msg);
+});
+
+app.post('/messages/:id/dislike', (req, res) => {
+  const msg = store.incrementDislikes(req.params.id);
+  if (!msg) return res.status(404).json({ error: 'message not found' });
+  res.json(msg);
+});
+
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {

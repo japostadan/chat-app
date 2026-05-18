@@ -47,3 +47,35 @@ describe('POST /messages', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('POST /messages/:id/like', () => {
+  it('increments likes and returns the updated message', async () => {
+    const created = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice' });
+    const res = await request(app).post(`/messages/${created.body.id}/like`);
+    expect(res.status).toBe(200);
+    expect(res.body.likes).toBe(1);
+  });
+
+  it('returns 404 for unknown id', async () => {
+    const res = await request(app).post('/messages/no-such-id/like');
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /messages/:id/dislike', () => {
+  it('increments dislikes and returns the updated message', async () => {
+    const created = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice' });
+    const res = await request(app).post(`/messages/${created.body.id}/dislike`);
+    expect(res.status).toBe(200);
+    expect(res.body.dislikes).toBe(1);
+  });
+
+  it('returns 404 for unknown id', async () => {
+    const res = await request(app).post('/messages/no-such-id/dislike');
+    expect(res.status).toBe(404);
+  });
+});

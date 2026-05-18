@@ -33,6 +33,26 @@ describe('messages store', () => {
     expect(store.findById('no-such-id')).toBeUndefined();
   });
 
+  it('incrementLikes returns the message with likes incremented', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    const updated = store.incrementLikes(msg.id);
+    expect(updated.likes).toBe(1);
+  });
+
+  it('incrementLikes returns undefined for unknown id', () => {
+    expect(store.incrementLikes('no-such-id')).toBeUndefined();
+  });
+
+  it('incrementDislikes returns the message with dislikes incremented', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    const updated = store.incrementDislikes(msg.id);
+    expect(updated.dislikes).toBe(1);
+  });
+
+  it('incrementDislikes returns undefined for unknown id', () => {
+    expect(store.incrementDislikes('no-such-id')).toBeUndefined();
+  });
+
   it('add returns a message with all required fields', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
     expect(msg).toMatchObject({
