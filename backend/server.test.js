@@ -7,6 +7,11 @@ describe('GET /messages', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
+
+  it('includes CORS headers', async () => {
+    const res = await request(app).get('/messages');
+    expect(res.headers['access-control-allow-origin']).toBe('*');
+  });
 });
 
 describe('POST /messages', () => {

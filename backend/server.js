@@ -1,9 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const { createStore } = require('./store');
 
 const app = express();
 const store = createStore();
 
+app.use(cors());
 app.use(express.json());
 
 app.get('/messages', (req, res) => {
