@@ -105,9 +105,11 @@ Like and dislike are separate action endpoints (not PATCH) because the client tr
 ```bash
 cd backend
 pnpm install
-node server.js        # starts on http://localhost:3000
+node server.js        # starts on http://localhost:3000 (serves frontend too)
 pnpm test             # run unit + integration tests
 ```
+
+Then open http://localhost:3000 in your browser.
 
 ---
 

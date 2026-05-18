@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+
+    form { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+    input, textarea { padding: 0.4rem 0.6rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    textarea { resize: vertical; min-height: 60px; }
+    button { align-self: flex-start; padding: 0.4rem 1rem; font-size: 1rem; cursor: pointer; }
+
+    #messages { list-style: none; padding: 0; margin: 0; }
+    #messages li { border-bottom: 1px solid #eee; padding: 0.75rem 0; }
+    .meta { font-size: 0.8rem; color: #666; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Chat</h1>
+
+  <form id="message-form">
+    <input id="author" type="text" placeholder="Your name" required>
+    <textarea id="text" placeholder="Message" required></textarea>
+    <button type="submit">Send</button>
+  </form>
+
+  <ul id="messages"></ul>
+
+  <script>
+    const API = '';
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString();
+    }
+
+    function renderMessages(messages) {
+      const list = document.getElementById('messages');
+      list.innerHTML = messages.map(m => `
+        <li>
+          <strong>${escapeHtml(m.author)}</strong>: ${escapeHtml(m.text)}
+          <div class="meta">
+            👍 ${m.likes} &nbsp; 👎 ${m.dislikes} &nbsp; ${formatTime(m.createdAt)}
+          </div>
+        </li>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function loadMessages() {
+      const list = document.getElementById('messages');
+      try {
+        const res = await fetch(`${API}/messages`);
+        const messages = await res.json();
+        renderMessages(messages);
+      } catch {
+        list.innerHTML = '<li>Could not load messages. Is the server running?</li>';
+      }
+    }
+
+    document.getElementById('message-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const author = document.getElementById('author').value.trim();
+      const text = document.getElementById('text').value.trim();
+
+      if (!author || !text) {
+        alert('Author and message are required.');
+        return;
+      }
+
+      const res = await fetch(`${API}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author, text }),
+      });
+
+      if (res.ok) {
+        document.getElementById('text').value = '';
+        await loadMessages();
+      } else {
+        alert('Failed to send message. Please try again.');
+      }
+    });
+
+    loadMessages();
+  </script>
+</body>
+</html>
