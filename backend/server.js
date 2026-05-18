@@ -15,11 +15,11 @@ app.get('/messages', (req, res) => {
 });
 
 app.post('/messages', (req, res) => {
-  const { text, author } = req.body;
+  const { text, author, replyTo } = req.body;
   if (!text || !author) {
     return res.status(400).json({ error: 'text and author are required' });
   }
-  const msg = store.add({ text, author });
+  const msg = store.add({ text, author, replyTo });
   res.status(201).json(msg);
 });
 

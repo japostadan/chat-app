@@ -53,6 +53,17 @@ describe('messages store', () => {
     expect(store.incrementDislikes('no-such-id')).toBeUndefined();
   });
 
+  it('add stores replyTo when provided', () => {
+    const parent = store.add({ text: 'parent', author: 'alice' });
+    const reply = store.add({ text: 'reply', author: 'bob', replyTo: parent.id });
+    expect(reply.replyTo).toBe(parent.id);
+  });
+
+  it('add sets replyTo to null when not provided', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    expect(msg.replyTo).toBeNull();
+  });
+
   it('add returns a message with all required fields', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
     expect(msg).toMatchObject({
