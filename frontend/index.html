@@ -42,10 +42,22 @@
         <li>
           <strong>${escapeHtml(m.author)}</strong>: ${escapeHtml(m.text)}
           <div class="meta">
-            👍 ${m.likes} &nbsp; 👎 ${m.dislikes} &nbsp; ${formatTime(m.createdAt)}
+            <button onclick="react('${escapeHtml(m.id)}', 'like')">👍 ${m.likes}</button>
+            <button onclick="react('${escapeHtml(m.id)}', 'dislike')">👎 ${m.dislikes}</button>
+            &nbsp; ${formatTime(m.createdAt)}
           </div>
         </li>
       `).join('');
+    }
+
+    async function react(id, action) {
+      try {
+        const res = await fetch(`${API}/messages/${id}/${action}`, { method: 'POST' });
+        if (!res.ok) throw new Error('failed');
+        await loadMessages();
+      } catch {
+        alert('Could not update. Please try again.');
+      }
     }
 
     function escapeHtml(str) {

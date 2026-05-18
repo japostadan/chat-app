@@ -12,6 +12,20 @@ function createStore() {
       return messages.find(m => m.id === id);
     },
 
+    incrementLikes(id) {
+      const msg = messages.find(m => m.id === id);
+      if (!msg) return undefined;
+      msg.likes += 1;
+      return msg;
+    },
+
+    incrementDislikes(id) {
+      const msg = messages.find(m => m.id === id);
+      if (!msg) return undefined;
+      msg.dislikes += 1;
+      return msg;
+    },
+
     add({ text, author, pending = false }) {
       const msg = {
         id: randomUUID(),
