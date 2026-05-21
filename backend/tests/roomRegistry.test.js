@@ -14,6 +14,14 @@ describe('room registry', () => {
     expect(first.broadcaster).toBe(second.broadcaster);
   });
 
+  it('getGlobal room has a presence tracker', () => {
+    const global = registry.getGlobal();
+    expect(global.presence).toBeDefined();
+    expect(typeof global.presence.add).toBe('function');
+    expect(typeof global.presence.remove).toBe('function');
+    expect(typeof global.presence.getAll).toBe('function');
+  });
+
   it('create returns a 6-character uppercase alphanumeric join code', () => {
     const code = registry.create();
     expect(code).toMatch(/^[A-Z0-9]{6}$/);
@@ -31,6 +39,7 @@ describe('room registry', () => {
     expect(room).toBeDefined();
     expect(room.store).toBeDefined();
     expect(room.broadcaster).toBeDefined();
+    expect(room.presence).toBeDefined();
   });
 
   it('get returns undefined for an unknown code', () => {
