@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat</title>
+  <title>Lobby</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,21 +15,21 @@
 
   <!-- Header -->
   <div id="header">
-    <h1>Chat</h1>
+    <h1>Lobby</h1>
     <div id="room-controls">
       <div id="room-global-actions">
-        <span id="room-global-label">Global</span>
-        <button id="room-create" title="Create a private room">＋ Room</button>
+        <span id="room-global-label">Main Lobby</span>
+        <button id="room-create" title="Create a private room">＋ Lobby</button>
         <div id="room-join-row">
-          <input id="join-input" type="text" placeholder="Join code" maxlength="6" spellcheck="false">
-          <button id="join-btn">Join</button>
+          <input id="join-input" type="text" placeholder="Lobby code" maxlength="6" spellcheck="false">
+          <button id="join-btn">Join Lobby</button>
         </div>
         <span id="join-error"></span>
       </div>
       <div id="room-indicator">
         <span id="room-code-display"></span>
         <button id="room-copy" title="Copy join code">Copy</button>
-        <button id="room-leave">Leave</button>
+        <button id="room-leave">Leave Lobby</button>
       </div>
     </div>
     <span id="username-display"></span>
@@ -37,7 +40,7 @@
 
   <!-- Messages -->
   <div id="messages-area">
-    <div id="empty-state">No messages yet. Say something!</div>
+    <div id="empty-state">No messages yet. Make some noise!</div>
   </div>
 
   <!-- Compose bar -->
@@ -69,9 +72,9 @@
 <!-- Username overlay -->
 <div id="username-overlay">
   <div id="username-form">
-    <h2>What's your name?</h2>
+    <h2>Choose your callsign</h2>
     <input id="username-input" type="text" placeholder="Enter your name" maxlength="40">
-    <button id="username-save">Let's chat</button>
+    <button id="username-save">Enter Lobby</button>
   </div>
 </div>
 

@@ -5,13 +5,13 @@
   --bg-surface:    #2b2d31;
   --bg-header:     #1e1f22;
   --bg-compose:    #383a40;
-  --bubble-mine:   #5865f2;
+  --bubble-mine:   #00e5ff;
   --bubble-theirs: #383a40;
   --text-primary:  #f2f3f5;
   --text-secondary:#b5bac1;
   --text-muted:    #80848e;
-  --accent:        #5865f2;
-  --accent-hover:  #4752c4;
+  --accent:        #00e5ff;
+  --accent-hover:  #00b8cc;
   --border:        #3f4147;
   --reaction-bg:   #2b2d31;
   --danger:        #ed4245;
@@ -21,7 +21,9 @@ html, body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 15px;
-  background: var(--bg-app);
+  background-color: var(--bg-app);
+  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
   color: var(--text-primary);
   color-scheme: dark;
 }
@@ -48,7 +50,7 @@ html, body {
   color: var(--text-primary);
 }
 
-#header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; }
+#header h1 { font-size: 1.1rem; font-weight: 700; flex: 1; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.05em; }
 
 /* ── Room controls ── */
 #room-controls {
@@ -106,7 +108,8 @@ html, body {
 
 #room-global-label {
   font-size: 0.78rem;
-  font-family: monospace;
+  font-family: 'Rajdhani', monospace;
+  font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
   background: var(--border);
@@ -122,10 +125,11 @@ html, body {
 
 #room-code-display {
   font-size: 0.78rem;
-  font-family: monospace;
+  font-family: 'Rajdhani', monospace;
+  font-weight: 700;
   letter-spacing: 0.08em;
   background: var(--accent);
-  color: var(--text-primary);
+  color: #1a1a1a;
   border-radius: 4px;
   padding: 0.15rem 0.45rem;
   cursor: default;
@@ -427,7 +431,7 @@ html, body {
   box-shadow: 0 8px 32px rgba(0,0,0,.5);
 }
 
-#username-form h2 { font-size: 1.1rem; }
+#username-form h2 { font-size: 1.1rem; font-family: 'Rajdhani', sans-serif; font-weight: 700; }
 
 #username-input {
   padding: 0.5rem 0.75rem;
