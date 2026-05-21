@@ -178,7 +178,6 @@ html, body {
 .msg-group.mine .bubble-row .actions  { right: calc(100% + 6px); }
 .msg-group.theirs .bubble-row .actions { left: calc(100% + 6px); }
 
-.bubble-row:hover .actions { display: flex; }
 
 .action-btn {
   background: none;
