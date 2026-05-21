@@ -1,5 +1,6 @@
 import { attachBubbleRowHover } from './hoverActions.js';
 import { getActiveRoom, setActiveRoom, clearActiveRoom } from './roomState.js';
+import { escapeHtml, formatTime, formatGroupTime, buildGroupMetaHtml } from './formatting.js';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -186,29 +187,6 @@ async function sendMessage() {
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function formatTime(ts) {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatGroupTime(ts) {
-  const d = new Date(ts);
-  const today = new Date();
-  const isToday = d.toDateString() === today.toDateString();
-  return isToday
-    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
-      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
 function renderMessages(messages) {
   const me = getAuthor();
   const byId = Object.fromEntries(messages.map(m => [m.id, m]));
@@ -235,7 +213,7 @@ function renderMessages(messages) {
     const side = isMine ? 'mine' : 'theirs';
     const firstMsg = group.messages[0];
 
-    const metaHtml = `<div class="group-meta">${isMine ? '' : escapeHtml(group.author) + ' · '}${formatGroupTime(firstMsg.createdAt)}</div>`;
+    const metaHtml = buildGroupMetaHtml(group.author, firstMsg.createdAt);
 
     const bubblesHtml = group.messages.map((m, idx) => {
       const isGrouped = idx > 0;
