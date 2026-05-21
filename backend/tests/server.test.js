@@ -116,6 +116,38 @@ describe('GET /events (SSE)', () => {
     server.close(() => done(err));
   }
 
+  it('returns 503 when the per-IP SSE connection cap is exceeded', (done) => {
+    const CAP = 10;
+    withServer(done, (server, port) => {
+      const connections = [];
+      let opened = 0;
+
+      function tryNext() {
+        const req = http.get(`http://127.0.0.1:${port}/events`);
+        req.on('error', () => {});
+        req.on('response', (res) => {
+          opened++;
+          if (res.statusCode === 200) {
+            connections.push(req);
+            res.resume();
+            if (opened <= CAP) tryNext();
+          } else {
+            try {
+              expect(opened).toBe(CAP + 1);
+              expect(res.statusCode).toBe(503);
+            } catch (err) {
+              return finish(server, done, err);
+            }
+            connections.forEach(r => r.destroy());
+            finish(server, done);
+          }
+        });
+      }
+
+      tryNext();
+    });
+  }, 10000);
+
   it('returns text/event-stream content type', (done) => {
     withServer(done, (server, port) => {
       const req = http.get(`http://127.0.0.1:${port}/events`, (res) => {
@@ -263,6 +295,62 @@ describe('POST /messages input validation', () => {
       .post('/messages')
       .send({ text: 'hello', author: 'alice', scheduledFor: within30 });
     expect(res.status).toBe(201);
+  });
+
+  it('returns 400 when scheduledFor is a boolean', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice', scheduledFor: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/scheduledFor/i);
+  });
+
+  it('returns 400 when scheduledFor is a string', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice', scheduledFor: 'next tuesday' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/scheduledFor/i);
+  });
+
+  it('returns 400 when scheduledFor is Infinity', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice', scheduledFor: Infinity });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/scheduledFor/i);
+  });
+});
+
+describe('POST /messages rate limiting', () => {
+  let savedEnv;
+  beforeEach(() => { savedEnv = process.env.NODE_ENV; delete process.env.NODE_ENV; });
+  afterEach(() => { process.env.NODE_ENV = savedEnv; });
+
+  it('returns 429 with { error } after the limit is exceeded', async () => {
+    const { app } = createApp(createStore(), { rateLimitMax: 1 });
+    await request(app).post('/messages').send({ text: 'first', author: 'alice' });
+    const res = await request(app).post('/messages').send({ text: 'second', author: 'alice' });
+    expect(res.status).toBe(429);
+    expect(res.body.error).toMatch(/too many requests/i);
+  });
+
+  it('does not rate-limit when NODE_ENV is test', async () => {
+    process.env.NODE_ENV = 'test';
+    const { app } = createApp(createStore(), { rateLimitMax: 1 });
+    await request(app).post('/messages').send({ text: 'first', author: 'alice' });
+    const res = await request(app).post('/messages').send({ text: 'second', author: 'alice' });
+    expect(res.status).toBe(201);
+  });
+});
+
+describe('static file server', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
+  it('returns 403 for dotfile requests', async () => {
+    const res = await request(app).get('/.env');
+    expect(res.status).toBe(403);
   });
 });
 
