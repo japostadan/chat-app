@@ -229,6 +229,7 @@ html, body {
 }
 
 .reaction-badge:hover { background: var(--border); }
+.reaction-badge.active { background: var(--border); font-weight: 600; }
 
 /* ── Hover action toolbar ── */
 .bubble-row .actions {
@@ -263,6 +264,7 @@ html, body {
 }
 
 .action-btn:hover { background: var(--bg-compose); color: var(--text-primary); }
+.action-btn.active { color: var(--text-primary); background: var(--bg-compose); }
 
 /* ── Timestamp tooltip on hover ── */
 .bubble[data-time]:hover::after {

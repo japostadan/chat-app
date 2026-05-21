@@ -208,40 +208,93 @@ describe('GET /events (SSE)', () => {
   }, 10000);
 });
 
-describe('POST /messages/:id/like', () => {
+describe('POST /messages/:id/react', () => {
   let app;
   beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
-  it('increments likes and returns the updated message', async () => {
+  it('like increments likes and returns the updated message', async () => {
     const created = await request(app)
-      .post('/messages')
-      .send({ text: 'hello', author: 'alice' });
-    const res = await request(app).post(`/messages/${created.body.id}/like`);
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    const res = await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1', reaction: 'like' });
     expect(res.status).toBe(200);
     expect(res.body.likes).toBe(1);
+    expect(res.body.dislikes).toBe(0);
   });
 
-  it('returns 404 for unknown id', async () => {
-    const res = await request(app).post('/messages/no-such-id/like');
-    expect(res.status).toBe(404);
-  });
-});
-
-describe('POST /messages/:id/dislike', () => {
-  let app;
-  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
-
-  it('increments dislikes and returns the updated message', async () => {
+  it('like twice by same voter toggles off', async () => {
     const created = await request(app)
-      .post('/messages')
-      .send({ text: 'hello', author: 'alice' });
-    const res = await request(app).post(`/messages/${created.body.id}/dislike`);
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1', reaction: 'like' });
+    const res = await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1', reaction: 'like' });
     expect(res.status).toBe(200);
+    expect(res.body.likes).toBe(0);
+  });
+
+  it('dislike after like swaps reaction', async () => {
+    const created = await request(app)
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1', reaction: 'like' });
+    const res = await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1', reaction: 'dislike' });
+    expect(res.status).toBe(200);
+    expect(res.body.likes).toBe(0);
     expect(res.body.dislikes).toBe(1);
   });
 
-  it('returns 404 for unknown id', async () => {
-    const res = await request(app).post('/messages/no-such-id/dislike');
+  it('returns 400 when voterId is missing', async () => {
+    const created = await request(app)
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    const res = await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ reaction: 'like' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when reaction is missing', async () => {
+    const created = await request(app)
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    const res = await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when reaction is invalid', async () => {
+    const created = await request(app)
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    const res = await request(app)
+      .post(`/messages/${created.body.id}/react`)
+      .send({ voterId: 'voter-1', reaction: 'love' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 for unknown message id', async () => {
+    const res = await request(app)
+      .post('/messages/no-such-id/react')
+      .send({ voterId: 'voter-1', reaction: 'like' });
+    expect(res.status).toBe(404);
+  });
+
+  it('old /like endpoint returns 404', async () => {
+    const created = await request(app)
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    const res = await request(app).post(`/messages/${created.body.id}/like`);
+    expect(res.status).toBe(404);
+  });
+
+  it('old /dislike endpoint returns 404', async () => {
+    const created = await request(app)
+      .post('/messages').send({ text: 'hello', author: 'alice' });
+    const res = await request(app).post(`/messages/${created.body.id}/dislike`);
     expect(res.status).toBe(404);
   });
 });

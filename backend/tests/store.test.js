@@ -26,31 +26,77 @@ describe('messages store', () => {
 
   it('findById returns the message with the given id', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
-    expect(store.findById(msg.id)).toBe(msg);
+    expect(store.findById(msg.id)).toMatchObject({ id: msg.id, text: 'hello' });
   });
 
   it('findById returns undefined for an unknown id', () => {
     expect(store.findById('no-such-id')).toBeUndefined();
   });
 
-  it('incrementLikes returns the message with likes incremented', () => {
+  it('react like increments likes count', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
-    const updated = store.incrementLikes(msg.id);
+    const updated = store.react(msg.id, 'voter-1', 'like');
     expect(updated.likes).toBe(1);
+    expect(updated.dislikes).toBe(0);
   });
 
-  it('incrementLikes returns undefined for unknown id', () => {
-    expect(store.incrementLikes('no-such-id')).toBeUndefined();
-  });
-
-  it('incrementDislikes returns the message with dislikes incremented', () => {
+  it('react like twice by same voter toggles off', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
-    const updated = store.incrementDislikes(msg.id);
+    store.react(msg.id, 'voter-1', 'like');
+    const updated = store.react(msg.id, 'voter-1', 'like');
+    expect(updated.likes).toBe(0);
+  });
+
+  it('react dislike increments dislikes count', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    const updated = store.react(msg.id, 'voter-1', 'dislike');
+    expect(updated.dislikes).toBe(1);
+    expect(updated.likes).toBe(0);
+  });
+
+  it('react dislike twice by same voter toggles off', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    store.react(msg.id, 'voter-1', 'dislike');
+    const updated = store.react(msg.id, 'voter-1', 'dislike');
+    expect(updated.dislikes).toBe(0);
+  });
+
+  it('react dislike after like swaps reaction', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    store.react(msg.id, 'voter-1', 'like');
+    const updated = store.react(msg.id, 'voter-1', 'dislike');
+    expect(updated.likes).toBe(0);
     expect(updated.dislikes).toBe(1);
   });
 
-  it('incrementDislikes returns undefined for unknown id', () => {
-    expect(store.incrementDislikes('no-such-id')).toBeUndefined();
+  it('react like after dislike swaps reaction', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    store.react(msg.id, 'voter-1', 'dislike');
+    const updated = store.react(msg.id, 'voter-1', 'like');
+    expect(updated.dislikes).toBe(0);
+    expect(updated.likes).toBe(1);
+  });
+
+  it('react returns undefined for unknown id', () => {
+    expect(store.react('no-such-id', 'voter-1', 'like')).toBeUndefined();
+  });
+
+  it('multiple voters react independently', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    store.react(msg.id, 'voter-1', 'like');
+    store.react(msg.id, 'voter-2', 'like');
+    store.react(msg.id, 'voter-3', 'dislike');
+    const [serialized] = store.getAll();
+    expect(serialized.likes).toBe(2);
+    expect(serialized.dislikes).toBe(1);
+  });
+
+  it('getAll does not expose voter sets', () => {
+    const msg = store.add({ text: 'hello', author: 'alice' });
+    store.react(msg.id, 'voter-1', 'like');
+    const [serialized] = store.getAll();
+    expect(serialized).not.toHaveProperty('likedBy');
+    expect(serialized).not.toHaveProperty('dislikedBy');
   });
 
   it('add stores replyTo when provided', () => {
@@ -93,6 +139,10 @@ describe('messages store', () => {
     const ts = Date.now() + 10000;
     const msg = store.add({ text: 'hello', author: 'alice', scheduledFor: ts });
     expect(msg.scheduledFor).toBe(ts);
+  });
+
+  it('react returns undefined for unknown id', () => {
+    expect(store.react('no-such-id', 'voter-1', 'like')).toBeUndefined();
   });
 
   it('add sets replyTo to null when not provided', () => {
