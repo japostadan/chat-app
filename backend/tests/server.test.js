@@ -1,11 +1,11 @@
 const http = require('http');
 const request = require('supertest');
 const { createApp } = require('../server');
-const { createStore } = require('../store');
+const { createRoomRegistry } = require('../roomRegistry');
 
 describe('GET /messages', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('returns an empty array on a fresh server', async () => {
     const res = await request(app).get('/messages');
@@ -24,7 +24,7 @@ describe('GET /messages', () => {
 
 describe('POST /messages', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('creates and returns a message with all required fields', async () => {
     const res = await request(app)
@@ -72,7 +72,7 @@ describe('POST /messages', () => {
 
 describe('POST /messages with scheduledFor', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('stores message as pending when scheduledFor is in the future', async () => {
     const future = Date.now() + 60000;
@@ -105,7 +105,7 @@ describe('POST /messages with scheduledFor', () => {
 
 describe('GET /events (SSE)', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   function withServer(done, cb) {
     const server = app.listen(0, () => cb(server, server.address().port));
@@ -210,7 +210,7 @@ describe('GET /events (SSE)', () => {
 
 describe('POST /messages/:id/like', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('increments likes and returns the updated message', async () => {
     const created = await request(app)
@@ -229,7 +229,7 @@ describe('POST /messages/:id/like', () => {
 
 describe('POST /messages/:id/dislike', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('increments dislikes and returns the updated message', async () => {
     const created = await request(app)
@@ -248,7 +248,7 @@ describe('POST /messages/:id/dislike', () => {
 
 describe('POST /messages input validation', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('returns 400 with error when text exceeds 2000 chars', async () => {
     const res = await request(app)
@@ -328,7 +328,7 @@ describe('POST /messages rate limiting', () => {
   afterEach(() => { process.env.NODE_ENV = savedEnv; });
 
   it('returns 429 with { error } after the limit is exceeded', async () => {
-    const { app } = createApp(createStore(), { rateLimitMax: 1 });
+    const { app } = createApp(createRoomRegistry(), { rateLimitMax: 1 });
     await request(app).post('/messages').send({ text: 'first', author: 'alice' });
     const res = await request(app).post('/messages').send({ text: 'second', author: 'alice' });
     expect(res.status).toBe(429);
@@ -337,7 +337,7 @@ describe('POST /messages rate limiting', () => {
 
   it('does not rate-limit when NODE_ENV is test', async () => {
     process.env.NODE_ENV = 'test';
-    const { app } = createApp(createStore(), { rateLimitMax: 1 });
+    const { app } = createApp(createRoomRegistry(), { rateLimitMax: 1 });
     await request(app).post('/messages').send({ text: 'first', author: 'alice' });
     const res = await request(app).post('/messages').send({ text: 'second', author: 'alice' });
     expect(res.status).toBe(201);
@@ -346,7 +346,7 @@ describe('POST /messages rate limiting', () => {
 
 describe('static file server', () => {
   let app;
-  beforeEach(() => { ({ app } = createApp(createStore())); });
+  beforeEach(() => { ({ app } = createApp(createRoomRegistry())); });
 
   it('returns 403 for dotfile requests', async () => {
     const res = await request(app).get('/.env');
@@ -359,7 +359,7 @@ describe('CORS with ALLOWED_ORIGIN env var', () => {
   let savedOrigin;
 
   beforeEach(() => {
-    ({ app } = createApp(createStore()));
+    ({ app } = createApp(createRoomRegistry()));
     savedOrigin = process.env.ALLOWED_ORIGIN;
   });
 
