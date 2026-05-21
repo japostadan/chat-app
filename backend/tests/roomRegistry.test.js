@@ -14,9 +14,9 @@ describe('room registry', () => {
     expect(first.broadcaster).toBe(second.broadcaster);
   });
 
-  it('create returns a 6-character alphanumeric join code', () => {
+  it('create returns a 6-character uppercase alphanumeric join code', () => {
     const code = registry.create();
-    expect(code).toMatch(/^[A-Za-z0-9]{6}$/);
+    expect(code).toMatch(/^[A-Z0-9]{6}$/);
   });
 
   it('two successive create calls return different codes', () => {
