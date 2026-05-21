@@ -9,9 +9,12 @@ describe('GET /messages', () => {
     expect(res.body).toEqual([]);
   });
 
-  it('includes CORS headers', async () => {
-    const res = await request(app).get('/messages');
-    expect(res.headers['access-control-allow-origin']).toBe('*');
+  it('allows any origin when ALLOWED_ORIGIN is not set', async () => {
+    delete process.env.ALLOWED_ORIGIN;
+    const res = await request(app)
+      .get('/messages')
+      .set('Origin', 'https://any-origin.example.com');
+    expect(res.headers['access-control-allow-origin']).toBe('https://any-origin.example.com');
   });
 });
 
@@ -189,5 +192,94 @@ describe('POST /messages/:id/dislike', () => {
   it('returns 404 for unknown id', async () => {
     const res = await request(app).post('/messages/no-such-id/dislike');
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /messages input validation', () => {
+  it('returns 400 with error when text exceeds 2000 chars', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'a'.repeat(2001), author: 'alice' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/text/i);
+  });
+
+  it('returns 201 when text is exactly 2000 chars', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'a'.repeat(2000), author: 'alice' });
+    expect(res.status).toBe(201);
+  });
+
+  it('returns 400 with error when author exceeds 64 chars', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'a'.repeat(65) });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/author/i);
+  });
+
+  it('returns 201 when author is exactly 64 chars', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'a'.repeat(64) });
+    expect(res.status).toBe(201);
+  });
+
+  it('returns 400 when scheduledFor is more than 30 days in the future', async () => {
+    const tooFar = Date.now() + 31 * 24 * 60 * 60 * 1000;
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice', scheduledFor: tooFar });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/scheduledFor/i);
+  });
+
+  it('returns 201 when scheduledFor is within 30 days', async () => {
+    const within30 = Date.now() + 29 * 24 * 60 * 60 * 1000;
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'hello', author: 'alice', scheduledFor: within30 });
+    expect(res.status).toBe(201);
+  });
+});
+
+describe('CORS with ALLOWED_ORIGIN env var', () => {
+  let savedOrigin;
+
+  beforeEach(() => {
+    savedOrigin = process.env.ALLOWED_ORIGIN;
+  });
+
+  afterEach(() => {
+    if (savedOrigin === undefined) {
+      delete process.env.ALLOWED_ORIGIN;
+    } else {
+      process.env.ALLOWED_ORIGIN = savedOrigin;
+    }
+  });
+
+  it('echoes matching origin when ALLOWED_ORIGIN is set', async () => {
+    process.env.ALLOWED_ORIGIN = 'https://myapp.vercel.app';
+    const res = await request(app)
+      .get('/messages')
+      .set('Origin', 'https://myapp.vercel.app');
+    expect(res.headers['access-control-allow-origin']).toBe('https://myapp.vercel.app');
+  });
+
+  it('rejects non-matching origin when ALLOWED_ORIGIN is set', async () => {
+    process.env.ALLOWED_ORIGIN = 'https://myapp.vercel.app';
+    const res = await request(app)
+      .get('/messages')
+      .set('Origin', 'https://evil.example.com');
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('allows any origin when ALLOWED_ORIGIN is not set', async () => {
+    delete process.env.ALLOWED_ORIGIN;
+    const res = await request(app)
+      .get('/messages')
+      .set('Origin', 'https://anywhere.example.com');
+    expect(res.headers['access-control-allow-origin']).toBe('https://anywhere.example.com');
   });
 });

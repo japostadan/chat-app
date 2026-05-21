@@ -1,11 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const { createStore } = require('./store');
 
 const app = express();
 const store = createStore();
 const clients = new Set();
+
+const MAX_TEXT = 2000;
+const MAX_AUTHOR = 64;
+const MAX_SCHEDULED_MS = 30 * 24 * 60 * 60 * 1000;
 
 function broadcast() {
   const data = `data: ${JSON.stringify(store.getAll())}\n\n`;
@@ -14,7 +19,17 @@ function broadcast() {
   });
 }
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = process.env.ALLOWED_ORIGIN;
+    if (!allowed || origin === allowed) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
@@ -37,7 +52,16 @@ app.post('/messages', (req, res) => {
   if (!text || !author) {
     return res.status(400).json({ error: 'text and author are required' });
   }
+  if (text.length > MAX_TEXT) {
+    return res.status(400).json({ error: `text must be at most ${MAX_TEXT} characters` });
+  }
+  if (author.length > MAX_AUTHOR) {
+    return res.status(400).json({ error: `author must be at most ${MAX_AUTHOR} characters` });
+  }
   const scheduledForMs = scheduledFor ? new Date(scheduledFor).getTime() : null;
+  if (scheduledForMs !== null && scheduledForMs - Date.now() > MAX_SCHEDULED_MS) {
+    return res.status(400).json({ error: 'scheduledFor must be within 30 days' });
+  }
   const pending = scheduledForMs !== null && scheduledForMs > Date.now();
   const msg = store.add({ text, author, replyTo, scheduledFor: scheduledForMs, pending });
   broadcast();
