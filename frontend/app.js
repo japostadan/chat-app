@@ -2,6 +2,8 @@ import { attachBubbleRowHover } from './hoverActions.js';
 import { getActiveRoom, setActiveRoom, clearActiveRoom } from './roomState.js';
 import { escapeHtml, formatTime, formatGroupTime, buildGroupMetaHtml } from './formatting.js';
 import { getClearedBefore, setClearedBefore, filterClearedMessages } from './viewClear.js';
+import { getVoterId } from './voter.js';
+import { getReaction, setReaction } from './reactions.js';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -58,7 +60,7 @@ function leaveRoom() {
 let lastMessages = [];
 
 document.getElementById('clear-btn').addEventListener('click', () => {
-  setClearedBefore(Date.now());
+  setClearedBefore(Date.now(), activeRoom || 'global');
   renderMessages(lastMessages);
 });
 
@@ -66,6 +68,12 @@ document.getElementById('room-create').addEventListener('click', createRoom);
 document.getElementById('join-btn').addEventListener('click', joinRoom);
 document.getElementById('join-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); joinRoom(); }
+});
+document.getElementById('room-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(activeRoom);
+  const btn = document.getElementById('room-copy');
+  btn.textContent = '✓';
+  setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
 });
 document.getElementById('room-leave').addEventListener('click', leaveRoom);
 
@@ -199,7 +207,7 @@ async function sendMessage() {
 
 function renderMessages(messages) {
   lastMessages = messages;
-  messages = filterClearedMessages(messages, getClearedBefore());
+  messages = filterClearedMessages(messages, getClearedBefore(activeRoom || 'global'));
   const me = getAuthor();
   const byId = Object.fromEntries(messages.map(m => [m.id, m]));
   const container = document.getElementById('messages-area');
@@ -237,17 +245,18 @@ function renderMessages(messages) {
            </div>`
         : '';
 
+      const myReaction = getReaction(m.id);
       const actionsHtml = `
         <div class="actions">
-          <button class="action-btn" data-action="like" data-id="${escapeHtml(m.id)}" title="Like">👍</button>
-          <button class="action-btn" data-action="dislike" data-id="${escapeHtml(m.id)}" title="Dislike">👎</button>
+          <button class="action-btn${myReaction === 'like' ? ' active' : ''}" data-action="like" data-id="${escapeHtml(m.id)}" title="Like">👍</button>
+          <button class="action-btn${myReaction === 'dislike' ? ' active' : ''}" data-action="dislike" data-id="${escapeHtml(m.id)}" title="Dislike">👎</button>
           <button class="action-btn" data-action="reply" data-id="${escapeHtml(m.id)}" data-author="${escapeHtml(m.author)}" data-text="${escapeHtml(m.text)}" title="Reply">↩</button>
         </div>`;
 
       const reactionsHtml = (m.likes > 0 || m.dislikes > 0)
         ? `<div class="reactions">
-             ${m.likes > 0 ? `<span class="reaction-badge" data-action="like" data-id="${escapeHtml(m.id)}">👍 ${m.likes}</span>` : ''}
-             ${m.dislikes > 0 ? `<span class="reaction-badge" data-action="dislike" data-id="${escapeHtml(m.id)}">👎 ${m.dislikes}</span>` : ''}
+             ${m.likes > 0 ? `<span class="reaction-badge${myReaction === 'like' ? ' active' : ''}" data-action="like" data-id="${escapeHtml(m.id)}">👍 ${m.likes}</span>` : ''}
+             ${m.dislikes > 0 ? `<span class="reaction-badge${myReaction === 'dislike' ? ' active' : ''}" data-action="dislike" data-id="${escapeHtml(m.id)}">👎 ${m.dislikes}</span>` : ''}
            </div>`
         : '';
 
@@ -295,9 +304,15 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
 
   if (action === 'like' || action === 'dislike') {
     const roomParam = activeRoom ? `?room=${encodeURIComponent(activeRoom)}` : '';
+    const voterId = getVoterId();
     try {
-      const res = await fetch(`${API}/messages/${id}/${action}${roomParam}`, { method: 'POST' });
+      const res = await fetch(`${API}/messages/${id}/react${roomParam}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voterId, reaction: action }),
+      });
       if (!res.ok) throw new Error('failed');
+      setReaction(id, action);
     } catch {
       alert('Could not update. Please try again.');
     }
@@ -309,11 +324,17 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
 const connBanner = document.getElementById('conn-banner');
 let es = null;
 
-function connectSSE() {
+async function connectSSE() {
   if (es) {
     es.close();
     es = null;
   }
+
+  if (activeRoom) {
+    const res = await fetch(`${API}/messages?room=${encodeURIComponent(activeRoom)}`);
+    if (res.status === 404) { leaveRoom(); return; }
+  }
+
   const url = activeRoom
     ? `${API}/events?room=${encodeURIComponent(activeRoom)}`
     : `${API}/events`;
@@ -322,8 +343,12 @@ function connectSSE() {
     connBanner.classList.remove('visible');
     renderMessages(JSON.parse(e.data));
   };
-  es.onerror = () => {
+  es.onerror = async () => {
     connBanner.classList.add('visible');
+    if (activeRoom && es.readyState === EventSource.CLOSED) {
+      const res = await fetch(`${API}/messages?room=${encodeURIComponent(activeRoom)}`);
+      if (res.status === 404) leaveRoom();
+    }
   };
 }
 

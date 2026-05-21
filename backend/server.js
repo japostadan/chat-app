@@ -115,19 +115,17 @@ function createApp(roomRegistry, { rateLimitMax = 60 } = {}) {
     res.status(201).json(msg);
   });
 
-  app.post('/messages/:id/like', (req, res) => {
+  app.post('/messages/:id/react', (req, res) => {
     const room = resolveRoom(roomRegistry, req.query.room);
     if (!room) return res.status(404).json({ error: 'room not found' });
-    const msg = room.store.incrementLikes(req.params.id);
-    if (!msg) return res.status(404).json({ error: 'message not found' });
-    room.broadcaster.emit(room.store.getAll());
-    res.json(msg);
-  });
-
-  app.post('/messages/:id/dislike', (req, res) => {
-    const room = resolveRoom(roomRegistry, req.query.room);
-    if (!room) return res.status(404).json({ error: 'room not found' });
-    const msg = room.store.incrementDislikes(req.params.id);
+    const { voterId, reaction } = req.body;
+    if (!voterId || !reaction) {
+      return res.status(400).json({ error: 'voterId and reaction are required' });
+    }
+    if (reaction !== 'like' && reaction !== 'dislike') {
+      return res.status(400).json({ error: 'reaction must be like or dislike' });
+    }
+    const msg = room.store.react(req.params.id, voterId, reaction);
     if (!msg) return res.status(404).json({ error: 'message not found' });
     room.broadcaster.emit(room.store.getAll());
     res.json(msg);

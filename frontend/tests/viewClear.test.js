@@ -6,19 +6,32 @@ describe('viewClear localStorage', () => {
     localStorage.clear();
   });
 
-  it('getClearedBefore returns null when nothing is stored', () => {
-    expect(getClearedBefore()).toBeNull();
+  it('getClearedBefore returns null when nothing is stored for that key', () => {
+    expect(getClearedBefore('global')).toBeNull();
   });
 
-  it('setClearedBefore stores a timestamp; getClearedBefore returns it', () => {
-    setClearedBefore(1234567890000);
-    expect(getClearedBefore()).toBe(1234567890000);
+  it('setClearedBefore stores a timestamp; getClearedBefore returns it for the same key', () => {
+    setClearedBefore(1234567890000, 'global');
+    expect(getClearedBefore('global')).toBe(1234567890000);
   });
 
-  it('setClearedBefore overwrites a previous value', () => {
-    setClearedBefore(1000);
-    setClearedBefore(2000);
-    expect(getClearedBefore()).toBe(2000);
+  it('setClearedBefore overwrites a previous value for the same key', () => {
+    setClearedBefore(1000, 'global');
+    setClearedBefore(2000, 'global');
+    expect(getClearedBefore('global')).toBe(2000);
+  });
+
+  it('clear for one room does not affect another room', () => {
+    setClearedBefore(5000, 'ABC123');
+    expect(getClearedBefore('global')).toBeNull();
+    expect(getClearedBefore('XYZ789')).toBeNull();
+  });
+
+  it('global and room clears are independent', () => {
+    setClearedBefore(1000, 'global');
+    setClearedBefore(9000, 'ABC123');
+    expect(getClearedBefore('global')).toBe(1000);
+    expect(getClearedBefore('ABC123')).toBe(9000);
   });
 });
 

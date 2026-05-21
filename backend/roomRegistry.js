@@ -2,7 +2,7 @@ const { randomBytes } = require('crypto');
 const { createStore } = require('./store');
 const { createBroadcaster } = require('./broadcaster');
 
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CODE_LENGTH = 6;
 
 function generateCode() {
