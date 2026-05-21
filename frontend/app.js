@@ -1,6 +1,7 @@
 import { attachBubbleRowHover } from './hoverActions.js';
 import { getActiveRoom, setActiveRoom, clearActiveRoom } from './roomState.js';
 import { escapeHtml, formatTime, formatGroupTime, buildGroupMetaHtml } from './formatting.js';
+import { getClearedBefore, setClearedBefore, filterClearedMessages } from './viewClear.js';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -51,6 +52,15 @@ function leaveRoom() {
   updateRoomUI();
   connectSSE();
 }
+
+// ── View Clear ────────────────────────────────────────────────────────────────
+
+let lastMessages = [];
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  setClearedBefore(Date.now());
+  renderMessages(lastMessages);
+});
 
 document.getElementById('room-create').addEventListener('click', createRoom);
 document.getElementById('join-btn').addEventListener('click', joinRoom);
@@ -188,6 +198,8 @@ async function sendMessage() {
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 function renderMessages(messages) {
+  lastMessages = messages;
+  messages = filterClearedMessages(messages, getClearedBefore());
   const me = getAuthor();
   const byId = Object.fromEntries(messages.map(m => [m.id, m]));
   const container = document.getElementById('messages-area');

@@ -359,7 +359,7 @@ html, body {
 
 #text::placeholder { color: var(--text-muted); }
 
-#schedule-toggle, #send-btn {
+#clear-btn, #schedule-toggle, #send-btn {
   flex-shrink: 0;
   width: 2.2rem;
   height: 2.2rem;
@@ -372,6 +372,12 @@ html, body {
   justify-content: center;
   transition: background 0.15s;
 }
+
+#clear-btn {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+}
+#clear-btn:hover { background: var(--border); color: var(--danger); }
 
 #schedule-toggle {
   background: var(--bg-surface);
