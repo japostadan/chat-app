@@ -1,3 +1,5 @@
+import { attachBubbleRowHover } from './hoverActions.js';
+
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -220,6 +222,11 @@ function renderMessages(messages) {
   const emptyState = document.getElementById('empty-state');
   container.innerHTML = html || '';
   container.appendChild(emptyState);
+
+  container.querySelectorAll('.bubble-row').forEach(row => {
+    const actionsEl = row.querySelector('.actions');
+    if (actionsEl) attachBubbleRowHover(row, actionsEl);
+  });
   emptyState.classList.toggle('visible', messages.length === 0);
 
   if (wasAtBottom) {
