@@ -3,17 +3,19 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
-const { createStore } = require('./store');
-const { createBroadcaster } = require('./broadcaster');
+const { createRoomRegistry } = require('./roomRegistry');
 const { createScheduler } = require('./scheduler');
 
 const MAX_TEXT = 2000;
 const MAX_AUTHOR = 64;
 const MAX_SCHEDULED_MS = 30 * 24 * 60 * 60 * 1000;
 
-function createApp(store, { rateLimitMax = 60 } = {}) {
+function resolveRoom(registry, code) {
+  return code ? registry.get(code) : registry.getGlobal();
+}
+
+function createApp(roomRegistry, { rateLimitMax = 60 } = {}) {
   const app = express();
-  const broadcaster = createBroadcaster();
 
   app.set('trust proxy', 1);
   app.use(helmet());
@@ -34,12 +36,21 @@ function createApp(store, { rateLimitMax = 60 } = {}) {
     }
     next();
   });
-  app.use(express.static(path.join(__dirname, '..', 'frontend')));
+  app.use(express.static(path.join(__dirname, '..', 'frontend'), { dotfiles: 'deny' }));
 
   const SSE_CAP = 10;
   const sseConnections = new Map();
 
+  app.post('/rooms', (req, res) => {
+    const code = roomRegistry.create();
+    res.status(201).json({ code });
+  });
+
   app.get('/events', (req, res) => {
+    const roomCode = req.query.room;
+    const room = resolveRoom(roomRegistry, roomCode);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
     const ip = req.ip;
     const count = sseConnections.get(ip) || 0;
     if (count >= SSE_CAP) {
@@ -51,10 +62,10 @@ function createApp(store, { rateLimitMax = 60 } = {}) {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
-    broadcaster.register(res);
-    broadcaster.emit(store.getAll());
+    room.broadcaster.register(res);
+    room.broadcaster.emit(room.store.getAll());
     req.on('close', () => {
-      broadcaster.unregister(res);
+      room.broadcaster.unregister(res);
       const current = sseConnections.get(ip) || 1;
       if (current <= 1) {
         sseConnections.delete(ip);
@@ -65,7 +76,9 @@ function createApp(store, { rateLimitMax = 60 } = {}) {
   });
 
   app.get('/messages', (req, res) => {
-    res.json(store.getAll());
+    const room = resolveRoom(roomRegistry, req.query.room);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+    res.json(room.store.getAll());
   });
 
   const messagesLimiter = rateLimit({
@@ -76,7 +89,10 @@ function createApp(store, { rateLimitMax = 60 } = {}) {
   });
 
   app.post('/messages', messagesLimiter, (req, res) => {
-    const { text, author, replyTo, scheduledFor } = req.body;
+    const { text, author, replyTo, scheduledFor, room: roomCode } = req.body;
+    const room = resolveRoom(roomRegistry, roomCode);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
     if (!text || !author) {
       return res.status(400).json({ error: 'text and author are required' });
     }
@@ -94,31 +110,36 @@ function createApp(store, { rateLimitMax = 60 } = {}) {
       return res.status(400).json({ error: 'scheduledFor must be within 30 days' });
     }
     const pending = scheduledForMs !== null && scheduledForMs > Date.now();
-    const msg = store.add({ text, author, replyTo, scheduledFor: scheduledForMs, pending });
-    broadcaster.emit(store.getAll());
+    const msg = room.store.add({ text, author, replyTo, scheduledFor: scheduledForMs, pending });
+    room.broadcaster.emit(room.store.getAll());
     res.status(201).json(msg);
   });
 
   app.post('/messages/:id/like', (req, res) => {
-    const msg = store.incrementLikes(req.params.id);
+    const room = resolveRoom(roomRegistry, req.query.room);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+    const msg = room.store.incrementLikes(req.params.id);
     if (!msg) return res.status(404).json({ error: 'message not found' });
-    broadcaster.emit(store.getAll());
+    room.broadcaster.emit(room.store.getAll());
     res.json(msg);
   });
 
   app.post('/messages/:id/dislike', (req, res) => {
-    const msg = store.incrementDislikes(req.params.id);
+    const room = resolveRoom(roomRegistry, req.query.room);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+    const msg = room.store.incrementDislikes(req.params.id);
     if (!msg) return res.status(404).json({ error: 'message not found' });
-    broadcaster.emit(store.getAll());
+    room.broadcaster.emit(room.store.getAll());
     res.json(msg);
   });
 
-  return { app, broadcaster };
+  return { app };
 }
 
 if (require.main === module) {
-  const store = createStore();
-  const { app, broadcaster } = createApp(store);
+  const registry = createRoomRegistry();
+  const { app } = createApp(registry);
+  const { store, broadcaster } = registry.getGlobal();
   createScheduler(store, broadcaster).start();
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
