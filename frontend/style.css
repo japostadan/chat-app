@@ -50,6 +50,78 @@ html, body {
 
 #header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; }
 
+/* ── Room controls ── */
+#room-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#room-global-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#room-join-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+#join-input {
+  width: 5.5rem;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+#join-input:focus { border-color: var(--accent); }
+
+#join-error {
+  font-size: 0.72rem;
+  color: var(--danger);
+}
+
+#room-create, #join-btn, #room-leave {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#room-create:hover, #join-btn:hover { background: var(--border); color: var(--text-primary); }
+#room-leave { border-color: var(--danger); color: var(--danger); }
+#room-leave:hover { background: var(--danger); color: var(--text-primary); }
+
+#room-indicator {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#room-code-display {
+  font-size: 0.78rem;
+  font-family: monospace;
+  letter-spacing: 0.08em;
+  background: var(--accent);
+  color: var(--text-primary);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  cursor: default;
+  user-select: all;
+}
+
 #username-display {
   font-size: 0.8rem;
   opacity: 0.85;

@@ -13,6 +13,20 @@
   <!-- Header -->
   <div id="header">
     <h1>Chat</h1>
+    <div id="room-controls">
+      <div id="room-global-actions">
+        <button id="room-create" title="Create a private room">＋ Room</button>
+        <div id="room-join-row">
+          <input id="join-input" type="text" placeholder="Join code" maxlength="6" spellcheck="false">
+          <button id="join-btn">Join</button>
+        </div>
+        <span id="join-error"></span>
+      </div>
+      <div id="room-indicator">
+        <span id="room-code-display"></span>
+        <button id="room-leave">Leave</button>
+      </div>
+    </div>
     <span id="username-display"></span>
   </div>
 
