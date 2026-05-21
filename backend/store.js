@@ -22,11 +22,7 @@ function createStore() {
       const opposite = reaction === 'like' ? 'dislikedBy' : 'likedBy';
       const own = reaction === 'like' ? 'likedBy' : 'dislikedBy';
       msg[opposite].delete(voterId);
-      if (msg[own].has(voterId)) {
-        msg[own].delete(voterId);
-      } else {
-        msg[own].add(voterId);
-      }
+      msg[own].add(voterId);
       return serialize(msg);
     },
 

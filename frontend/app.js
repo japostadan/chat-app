@@ -3,7 +3,7 @@ import { getActiveRoom, setActiveRoom, clearActiveRoom } from './roomState.js';
 import { escapeHtml, formatTime, formatGroupTime, buildGroupMetaHtml } from './formatting.js';
 import { getClearedBefore, setClearedBefore, filterClearedMessages } from './viewClear.js';
 import { getVoterId } from './voter.js';
-import { getReaction, setReaction, clearReaction } from './reactions.js';
+import { getReaction, setReaction } from './reactions.js';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -305,7 +305,6 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
   if (action === 'like' || action === 'dislike') {
     const roomParam = activeRoom ? `?room=${encodeURIComponent(activeRoom)}` : '';
     const voterId = getVoterId();
-    const current = getReaction(id);
     try {
       const res = await fetch(`${API}/messages/${id}/react${roomParam}`, {
         method: 'POST',
@@ -313,11 +312,7 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
         body: JSON.stringify({ voterId, reaction: action }),
       });
       if (!res.ok) throw new Error('failed');
-      if (current === action) {
-        clearReaction(id);
-      } else {
-        setReaction(id, action);
-      }
+      setReaction(id, action);
     } catch {
       alert('Could not update. Please try again.');
     }

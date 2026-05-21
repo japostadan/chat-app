@@ -223,7 +223,7 @@ describe('POST /messages/:id/react', () => {
     expect(res.body.dislikes).toBe(0);
   });
 
-  it('like twice by same voter toggles off', async () => {
+  it('like twice by same voter is idempotent', async () => {
     const created = await request(app)
       .post('/messages').send({ text: 'hello', author: 'alice' });
     await request(app)
@@ -233,7 +233,7 @@ describe('POST /messages/:id/react', () => {
       .post(`/messages/${created.body.id}/react`)
       .send({ voterId: 'voter-1', reaction: 'like' });
     expect(res.status).toBe(200);
-    expect(res.body.likes).toBe(0);
+    expect(res.body.likes).toBe(1);
   });
 
   it('dislike after like swaps reaction', async () => {

@@ -40,11 +40,11 @@ describe('messages store', () => {
     expect(updated.dislikes).toBe(0);
   });
 
-  it('react like twice by same voter toggles off', () => {
+  it('react like twice by same voter is idempotent', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
     store.react(msg.id, 'voter-1', 'like');
     const updated = store.react(msg.id, 'voter-1', 'like');
-    expect(updated.likes).toBe(0);
+    expect(updated.likes).toBe(1);
   });
 
   it('react dislike increments dislikes count', () => {
@@ -54,11 +54,11 @@ describe('messages store', () => {
     expect(updated.likes).toBe(0);
   });
 
-  it('react dislike twice by same voter toggles off', () => {
+  it('react dislike twice by same voter is idempotent', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
     store.react(msg.id, 'voter-1', 'dislike');
     const updated = store.react(msg.id, 'voter-1', 'dislike');
-    expect(updated.dislikes).toBe(0);
+    expect(updated.dislikes).toBe(1);
   });
 
   it('react dislike after like swaps reaction', () => {
