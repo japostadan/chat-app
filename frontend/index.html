@@ -81,7 +81,6 @@
       try {
         const res = await fetch(`${API}/messages/${id}/${action}`, { method: 'POST' });
         if (!res.ok) throw new Error('failed');
-        await loadMessages();
       } catch {
         alert('Could not update. Please try again.');
       }
@@ -94,17 +93,6 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-    }
-
-    async function loadMessages() {
-      const list = document.getElementById('messages');
-      try {
-        const res = await fetch(`${API}/messages`);
-        const messages = await res.json();
-        renderMessages(messages);
-      } catch {
-        list.innerHTML = '<li>Could not load messages. Is the server running?</li>';
-      }
     }
 
     document.getElementById('message-form').addEventListener('submit', async (e) => {
@@ -144,8 +132,11 @@
       if (btn) setReplyingTo(btn.dataset.id, btn.dataset.author);
     });
 
-    loadMessages();
-    setInterval(loadMessages, 2000);
+    const es = new EventSource('/events');
+    es.onmessage = (e) => renderMessages(JSON.parse(e.data));
+    es.onerror = () => {
+      document.getElementById('messages').innerHTML = '<li>Connection lost. Reconnecting…</li>';
+    };
   </script>
 </body>
 </html>
