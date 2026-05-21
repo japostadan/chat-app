@@ -1,7 +1,62 @@
 import { attachBubbleRowHover } from './hoverActions.js';
+import { getActiveRoom, setActiveRoom, clearActiveRoom } from './roomState.js';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
+
+// ── Active room ───────────────────────────────────────────────────────────────
+
+let activeRoom = getActiveRoom();
+
+function updateRoomUI() {
+  const isInRoom = Boolean(activeRoom);
+  document.getElementById('room-global-actions').style.display = isInRoom ? 'none' : '';
+  document.getElementById('room-indicator').style.display = isInRoom ? 'flex' : 'none';
+  if (isInRoom) {
+    document.getElementById('room-code-display').textContent = activeRoom;
+  }
+}
+
+async function createRoom() {
+  const res = await fetch(`${API}/rooms`, { method: 'POST' });
+  if (!res.ok) { alert('Could not create room. Please try again.'); return; }
+  const { code } = await res.json();
+  enterRoom(code);
+}
+
+async function joinRoom() {
+  const code = document.getElementById('join-input').value.trim().toUpperCase();
+  if (!code) return;
+  const res = await fetch(`${API}/messages?room=${encodeURIComponent(code)}`);
+  if (res.status === 404) {
+    document.getElementById('join-error').textContent = 'Room not found.';
+    return;
+  }
+  document.getElementById('join-error').textContent = '';
+  document.getElementById('join-input').value = '';
+  enterRoom(code);
+}
+
+function enterRoom(code) {
+  activeRoom = code;
+  setActiveRoom(code);
+  updateRoomUI();
+  connectSSE();
+}
+
+function leaveRoom() {
+  activeRoom = null;
+  clearActiveRoom();
+  updateRoomUI();
+  connectSSE();
+}
+
+document.getElementById('room-create').addEventListener('click', createRoom);
+document.getElementById('join-btn').addEventListener('click', joinRoom);
+document.getElementById('join-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); joinRoom(); }
+});
+document.getElementById('room-leave').addEventListener('click', leaveRoom);
 
 // ── Username ──────────────────────────────────────────────────────────────────
 
@@ -109,6 +164,7 @@ async function sendMessage() {
   const body = { author, text };
   if (replyingTo) body.replyTo = replyingTo;
   if (scheduledForEl.value) body.scheduledFor = new Date(scheduledForEl.value).getTime();
+  if (activeRoom) body.room = activeRoom;
 
   const res = await fetch(`${API}/messages`, {
     method: 'POST',
@@ -222,12 +278,12 @@ function renderMessages(messages) {
   const emptyState = document.getElementById('empty-state');
   container.innerHTML = html || '';
   container.appendChild(emptyState);
+  emptyState.classList.toggle('visible', messages.length === 0);
 
   container.querySelectorAll('.bubble-row').forEach(row => {
     const actionsEl = row.querySelector('.actions');
     if (actionsEl) attachBubbleRowHover(row, actionsEl);
   });
-  emptyState.classList.toggle('visible', messages.length === 0);
 
   if (wasAtBottom) {
     container.scrollTop = container.scrollHeight;
@@ -248,8 +304,9 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
   }
 
   if (action === 'like' || action === 'dislike') {
+    const roomParam = activeRoom ? `?room=${encodeURIComponent(activeRoom)}` : '';
     try {
-      const res = await fetch(`${API}/messages/${id}/${action}`, { method: 'POST' });
+      const res = await fetch(`${API}/messages/${id}/${action}${roomParam}`, { method: 'POST' });
       if (!res.ok) throw new Error('failed');
     } catch {
       alert('Could not update. Please try again.');
@@ -260,17 +317,25 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
 // ── SSE ───────────────────────────────────────────────────────────────────────
 
 const connBanner = document.getElementById('conn-banner');
+let es = null;
 
-const es = new EventSource(`${API}/events`);
-
-es.onmessage = (e) => {
-  connBanner.classList.remove('visible');
-  renderMessages(JSON.parse(e.data));
-};
-
-es.onerror = () => {
-  connBanner.classList.add('visible');
-};
+function connectSSE() {
+  if (es) {
+    es.close();
+    es = null;
+  }
+  const url = activeRoom
+    ? `${API}/events?room=${encodeURIComponent(activeRoom)}`
+    : `${API}/events`;
+  es = new EventSource(url);
+  es.onmessage = (e) => {
+    connBanner.classList.remove('visible');
+    renderMessages(JSON.parse(e.data));
+  };
+  es.onerror = () => {
+    connBanner.classList.add('visible');
+  };
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
@@ -281,4 +346,6 @@ es.onerror = () => {
   } else {
     document.getElementById('username-display').textContent = author;
   }
+  updateRoomUI();
+  connectSSE();
 })();
