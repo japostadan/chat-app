@@ -5,10 +5,28 @@ const { createStore } = require('./store');
 
 const app = express();
 const store = createStore();
+const clients = new Set();
+
+function broadcast() {
+  const data = `data: ${JSON.stringify(store.getAll())}\n\n`;
+  clients.forEach(res => {
+    try { res.write(data); } catch (_) { clients.delete(res); }
+  });
+}
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  clients.add(res);
+  res.write(`data: ${JSON.stringify(store.getAll())}\n\n`);
+  req.on('close', () => clients.delete(res));
+});
 
 app.get('/messages', (req, res) => {
   res.json(store.getAll());
@@ -22,23 +40,26 @@ app.post('/messages', (req, res) => {
   const scheduledForMs = scheduledFor ? new Date(scheduledFor).getTime() : null;
   const pending = scheduledForMs !== null && scheduledForMs > Date.now();
   const msg = store.add({ text, author, replyTo, scheduledFor: scheduledForMs, pending });
+  broadcast();
   res.status(201).json(msg);
 });
 
 app.post('/messages/:id/like', (req, res) => {
   const msg = store.incrementLikes(req.params.id);
   if (!msg) return res.status(404).json({ error: 'message not found' });
+  broadcast();
   res.json(msg);
 });
 
 app.post('/messages/:id/dislike', (req, res) => {
   const msg = store.incrementDislikes(req.params.id);
   if (!msg) return res.status(404).json({ error: 'message not found' });
+  broadcast();
   res.json(msg);
 });
 
 if (require.main === module) {
-  setInterval(() => store.publishPending(), 3000);
+  setInterval(() => { store.publishPending(); broadcast(); }, 3000);
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);

@@ -1,3 +1,4 @@
+const http = require('http');
 const request = require('supertest');
 const app = require('../server');
 
@@ -87,6 +88,76 @@ describe('POST /messages with scheduledFor', () => {
     expect(res.status).toBe(201);
     expect(res.body.pending).toBe(false);
   });
+});
+
+describe('GET /events (SSE)', () => {
+  function withServer(done, cb) {
+    const server = app.listen(0, () => cb(server, server.address().port));
+    return server;
+  }
+
+  function finish(server, done, err) {
+    server.close(() => done(err));
+  }
+
+  it('returns text/event-stream content type', (done) => {
+    withServer(done, (server, port) => {
+      const req = http.get(`http://127.0.0.1:${port}/events`, (res) => {
+        try {
+          expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+          res.destroy();
+          finish(server, done);
+        } catch (err) {
+          res.destroy();
+          finish(server, done, err);
+        }
+      });
+      req.on('error', () => {});
+    });
+  });
+
+  it('sends an initial event with current messages on connect', (done) => {
+    withServer(done, (server, port) => {
+      const req = http.get(`http://127.0.0.1:${port}/events`, (res) => {
+        res.once('data', (chunk) => {
+          try {
+            expect(chunk.toString()).toMatch(/^data: \[/);
+            res.destroy();
+            finish(server, done);
+          } catch (err) {
+            res.destroy();
+            finish(server, done, err);
+          }
+        });
+      });
+      req.on('error', () => {});
+    });
+  });
+
+  it('broadcasts an event to connected clients when a message is posted', (done) => {
+    withServer(done, (server, port) => {
+      let finished = false;
+      const req = http.get(`http://127.0.0.1:${port}/events`, (res) => {
+        const buf = [];
+        res.on('data', (chunk) => {
+          if (finished) return;
+          buf.push(chunk.toString());
+          if (buf.join('').includes('sse-broadcast-marker')) {
+            finished = true;
+            res.destroy();
+            finish(server, done);
+          }
+        });
+        setImmediate(() => {
+          request(app)
+            .post('/messages')
+            .send({ text: 'sse-broadcast-marker', author: 'tester' })
+            .end(() => {});
+        });
+      });
+      req.on('error', () => {});
+    });
+  }, 10000);
 });
 
 describe('POST /messages/:id/like', () => {
