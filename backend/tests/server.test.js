@@ -59,6 +59,36 @@ describe('POST /messages', () => {
   });
 });
 
+describe('POST /messages with scheduledFor', () => {
+  it('stores message as pending when scheduledFor is in the future', async () => {
+    const future = Date.now() + 60000;
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'later', author: 'alice', scheduledFor: future });
+    expect(res.status).toBe(201);
+    expect(res.body.pending).toBe(true);
+    expect(res.body.scheduledFor).toBe(future);
+  });
+
+  it('GET /messages excludes a pending scheduled message', async () => {
+    const future = Date.now() + 60000;
+    await request(app)
+      .post('/messages')
+      .send({ text: 'invisible', author: 'alice', scheduledFor: future });
+    const res = await request(app).get('/messages');
+    const texts = res.body.map(m => m.text);
+    expect(texts).not.toContain('invisible');
+  });
+
+  it('stores message as not pending when no scheduledFor is given', async () => {
+    const res = await request(app)
+      .post('/messages')
+      .send({ text: 'immediate', author: 'alice' });
+    expect(res.status).toBe(201);
+    expect(res.body.pending).toBe(false);
+  });
+});
+
 describe('POST /messages/:id/like', () => {
   it('increments likes and returns the updated message', async () => {
     const created = await request(app)
