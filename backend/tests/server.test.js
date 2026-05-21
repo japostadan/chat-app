@@ -375,6 +375,28 @@ describe('POST /messages input validation', () => {
   });
 });
 
+describe('POST /rooms rate limiting', () => {
+  let savedEnv;
+  beforeEach(() => { savedEnv = process.env.NODE_ENV; delete process.env.NODE_ENV; });
+  afterEach(() => { process.env.NODE_ENV = savedEnv; });
+
+  it('returns 429 after the room creation limit is exceeded', async () => {
+    const { app } = createApp(createRoomRegistry(), { roomsRateLimitMax: 1 });
+    await request(app).post('/rooms');
+    const res = await request(app).post('/rooms');
+    expect(res.status).toBe(429);
+    expect(res.body.error).toMatch(/too many requests/i);
+  });
+
+  it('does not rate-limit room creation when NODE_ENV is test', async () => {
+    process.env.NODE_ENV = 'test';
+    const { app } = createApp(createRoomRegistry(), { roomsRateLimitMax: 1 });
+    await request(app).post('/rooms');
+    const res = await request(app).post('/rooms');
+    expect(res.status).toBe(201);
+  });
+});
+
 describe('POST /messages rate limiting', () => {
   let savedEnv;
   beforeEach(() => { savedEnv = process.env.NODE_ENV; delete process.env.NODE_ENV; });

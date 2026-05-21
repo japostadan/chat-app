@@ -183,9 +183,9 @@ async function sendMessage() {
   const body = { author, text };
   if (replyingTo) body.replyTo = replyingTo;
   if (scheduledForEl.value) body.scheduledFor = new Date(scheduledForEl.value).getTime();
-  if (activeRoom) body.room = activeRoom;
 
-  const res = await fetch(`${API}/messages`, {
+  const roomParam = activeRoom ? `?room=${encodeURIComponent(activeRoom)}` : '';
+  const res = await fetch(`${API}/messages${roomParam}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
