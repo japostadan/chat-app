@@ -69,6 +69,12 @@ document.getElementById('join-btn').addEventListener('click', joinRoom);
 document.getElementById('join-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); joinRoom(); }
 });
+document.getElementById('room-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(activeRoom);
+  const btn = document.getElementById('room-copy');
+  btn.textContent = '✓';
+  setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+});
 document.getElementById('room-leave').addEventListener('click', leaveRoom);
 
 // ── Username ──────────────────────────────────────────────────────────────────

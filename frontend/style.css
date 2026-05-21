@@ -89,7 +89,7 @@ html, body {
   color: var(--danger);
 }
 
-#room-create, #join-btn, #room-leave {
+#room-create, #join-btn, #room-copy, #room-leave {
   font-size: 0.78rem;
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--border);
@@ -100,9 +100,19 @@ html, body {
   white-space: nowrap;
 }
 
-#room-create:hover, #join-btn:hover { background: var(--border); color: var(--text-primary); }
+#room-create:hover, #join-btn:hover, #room-copy:hover { background: var(--border); color: var(--text-primary); }
 #room-leave { border-color: var(--danger); color: var(--danger); }
 #room-leave:hover { background: var(--danger); color: var(--text-primary); }
+
+#room-global-label {
+  font-size: 0.78rem;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background: var(--border);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+}
 
 #room-indicator {
   display: none;
