@@ -323,11 +323,17 @@ document.getElementById('messages-area').addEventListener('click', async (e) => 
 const connBanner = document.getElementById('conn-banner');
 let es = null;
 
-function connectSSE() {
+async function connectSSE() {
   if (es) {
     es.close();
     es = null;
   }
+
+  if (activeRoom) {
+    const res = await fetch(`${API}/messages?room=${encodeURIComponent(activeRoom)}`);
+    if (res.status === 404) { leaveRoom(); return; }
+  }
+
   const url = activeRoom
     ? `${API}/events?room=${encodeURIComponent(activeRoom)}`
     : `${API}/events`;
@@ -336,8 +342,12 @@ function connectSSE() {
     connBanner.classList.remove('visible');
     renderMessages(JSON.parse(e.data));
   };
-  es.onerror = () => {
+  es.onerror = async () => {
     connBanner.classList.add('visible');
+    if (activeRoom && es.readyState === EventSource.CLOSED) {
+      const res = await fetch(`${API}/messages?room=${encodeURIComponent(activeRoom)}`);
+      if (res.status === 404) leaveRoom();
+    }
   };
 }
 
