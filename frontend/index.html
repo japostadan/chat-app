@@ -3,140 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat App</title>
-  <style>
-    body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
-    h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
-
-    form { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
-    input, textarea { padding: 0.4rem 0.6rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
-    textarea { resize: vertical; min-height: 60px; }
-    button { align-self: flex-start; padding: 0.4rem 1rem; font-size: 1rem; cursor: pointer; }
-
-    #messages { list-style: none; padding: 0; margin: 0; }
-    #messages li { border-bottom: 1px solid #eee; padding: 0.75rem 0; }
-    .meta { font-size: 0.8rem; color: #666; margin-top: 0.25rem; }
-  </style>
+  <title>Chat</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Chat</h1>
 
-  <form id="message-form">
-    <div id="reply-indicator" style="display:none; font-size:0.85rem; color:#555;"></div>
-    <input id="author" type="text" placeholder="Your name" required>
-    <textarea id="text" placeholder="Message" required></textarea>
-    <label for="scheduled-for" style="font-size:0.85rem; color:#555;">Schedule for (optional)</label>
-    <input id="scheduled-for" type="datetime-local">
-    <button type="submit">Send</button>
-  </form>
+<div id="app">
 
-  <ul id="messages"></ul>
+  <!-- Header -->
+  <div id="header">
+    <h1>Chat</h1>
+    <span id="username-display"></span>
+  </div>
 
-  <script>
-    const API = '';
-    let replyingTo = null;
+  <!-- Connection lost banner -->
+  <div id="conn-banner">Connection lost — reconnecting…</div>
 
-    function formatTime(ts) {
-      return new Date(ts).toLocaleTimeString();
-    }
+  <!-- Messages -->
+  <div id="messages-area">
+    <div id="empty-state">No messages yet. Say something!</div>
+  </div>
 
-    function setReplyingTo(id, author) {
-      replyingTo = { id, author };
-      const indicator = document.getElementById('reply-indicator');
-      indicator.style.display = 'block';
-      indicator.innerHTML = `Replying to <strong>${escapeHtml(author)}</strong> — <a href="#" onclick="cancelReply(event)">cancel</a>`;
-      document.getElementById('text').focus();
-    }
+  <!-- Compose bar -->
+  <div id="compose">
+    <!-- Reply strip -->
+    <div id="reply-strip">
+      <span class="strip-author"></span>
+      <span class="strip-text"></span>
+      <button id="reply-cancel" class="strip-cancel" title="Cancel reply">✕</button>
+    </div>
 
-    function cancelReply(e) {
-      if (e) e.preventDefault();
-      replyingTo = null;
-      const indicator = document.getElementById('reply-indicator');
-      indicator.style.display = 'none';
-      indicator.innerHTML = '';
-    }
+    <!-- Schedule strip -->
+    <div id="schedule-strip">
+      <label for="scheduled-for">Send at:</label>
+      <input id="scheduled-for" type="datetime-local">
+    </div>
 
-    function renderMessages(messages) {
-      const byId = Object.fromEntries(messages.map(m => [m.id, m]));
-      const list = document.getElementById('messages');
-      list.innerHTML = messages.map(m => {
-        const parentLine = m.replyTo && byId[m.replyTo]
-          ? `<div style="font-size:0.8rem;color:#888;border-left:2px solid #ccc;padding-left:0.5rem;margin-bottom:0.25rem;">↩ ${escapeHtml(byId[m.replyTo].author)}: ${escapeHtml(byId[m.replyTo].text)}</div>`
-          : '';
-        return `
-        <li>
-          ${parentLine}
-          <strong>${escapeHtml(m.author)}</strong>: ${escapeHtml(m.text)}
-          <div class="meta">
-            <button onclick="react('${escapeHtml(m.id)}', 'like')">👍 ${m.likes}</button>
-            <button onclick="react('${escapeHtml(m.id)}', 'dislike')">👎 ${m.dislikes}</button>
-            <button class="reply-btn" data-id="${escapeHtml(m.id)}" data-author="${escapeHtml(m.author)}">↩ Reply</button>
-            &nbsp; ${formatTime(m.createdAt)}
-          </div>
-        </li>`;
-      }).join('');
-    }
+    <!-- Input row -->
+    <div id="input-row">
+      <textarea id="text" placeholder="Message" rows="1"></textarea>
+      <button id="schedule-toggle" title="Schedule message">🕐</button>
+      <button id="send-btn" title="Send">&#10148;</button>
+    </div>
+  </div>
 
-    async function react(id, action) {
-      try {
-        const res = await fetch(`${API}/messages/${id}/${action}`, { method: 'POST' });
-        if (!res.ok) throw new Error('failed');
-      } catch {
-        alert('Could not update. Please try again.');
-      }
-    }
+</div>
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
+<!-- Username overlay -->
+<div id="username-overlay">
+  <div id="username-form">
+    <h2>What's your name?</h2>
+    <input id="username-input" type="text" placeholder="Enter your name" maxlength="40">
+    <button id="username-save">Let's chat</button>
+  </div>
+</div>
 
-    document.getElementById('message-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const author = document.getElementById('author').value.trim();
-      const text = document.getElementById('text').value.trim();
-
-      if (!author || !text) {
-        alert('Author and message are required.');
-        return;
-      }
-
-      const scheduledFor = document.getElementById('scheduled-for').value;
-
-      const body = { author, text };
-      if (replyingTo) body.replyTo = replyingTo.id;
-      if (scheduledFor) body.scheduledFor = new Date(scheduledFor).getTime();
-
-      const res = await fetch(`${API}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (res.ok) {
-        document.getElementById('text').value = '';
-        document.getElementById('scheduled-for').value = '';
-        cancelReply();
-        await loadMessages();
-      } else {
-        alert('Failed to send message. Please try again.');
-      }
-    });
-
-    document.getElementById('messages').addEventListener('click', (e) => {
-      const btn = e.target.closest('.reply-btn');
-      if (btn) setReplyingTo(btn.dataset.id, btn.dataset.author);
-    });
-
-    const es = new EventSource('/events');
-    es.onmessage = (e) => renderMessages(JSON.parse(e.data));
-    es.onerror = () => {
-      document.getElementById('messages').innerHTML = '<li>Connection lost. Reconnecting…</li>';
-    };
-  </script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

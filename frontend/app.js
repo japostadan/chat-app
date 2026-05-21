@@ -1,0 +1,277 @@
+const API = import.meta.env.VITE_API_URL ?? '';
+const GROUP_GAP_MS = 5 * 60 * 1000;
+
+// ── Username ──────────────────────────────────────────────────────────────────
+
+function getAuthor() {
+  return localStorage.getItem('chat_author') || '';
+}
+
+function setAuthor(name) {
+  localStorage.setItem('chat_author', name);
+  document.getElementById('username-display').textContent = name;
+}
+
+function showUsernameOverlay() {
+  const overlay = document.getElementById('username-overlay');
+  overlay.classList.add('visible');
+  document.getElementById('username-input').value = getAuthor();
+  document.getElementById('username-input').focus();
+}
+
+function hideUsernameOverlay() {
+  document.getElementById('username-overlay').classList.remove('visible');
+}
+
+document.getElementById('username-save').addEventListener('click', () => {
+  const name = document.getElementById('username-input').value.trim();
+  if (!name) return;
+  setAuthor(name);
+  hideUsernameOverlay();
+});
+
+document.getElementById('username-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('username-save').click();
+  }
+});
+
+document.getElementById('username-display').addEventListener('click', showUsernameOverlay);
+
+document.getElementById('username-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) hideUsernameOverlay();
+});
+
+// ── Scheduled toggle ──────────────────────────────────────────────────────────
+
+const scheduleToggle = document.getElementById('schedule-toggle');
+const scheduleStrip  = document.getElementById('schedule-strip');
+
+scheduleToggle.addEventListener('click', () => {
+  const active = scheduleStrip.style.display === 'flex';
+  scheduleStrip.style.display = active ? 'none' : 'flex';
+  scheduleToggle.classList.toggle('active', !active);
+  if (!active) document.getElementById('scheduled-for').focus();
+});
+
+// ── Reply state ───────────────────────────────────────────────────────────────
+
+let replyingTo = null;
+
+function setReply(id, author, text) {
+  replyingTo = id;
+  const strip = document.getElementById('reply-strip');
+  strip.style.display = 'flex';
+  strip.querySelector('.strip-author').textContent = author;
+  strip.querySelector('.strip-text').textContent = text;
+  document.getElementById('text').focus();
+}
+
+function cancelReply() {
+  replyingTo = null;
+  const strip = document.getElementById('reply-strip');
+  strip.style.display = 'none';
+}
+
+document.getElementById('reply-cancel').addEventListener('click', cancelReply);
+
+// ── Textarea auto-grow ────────────────────────────────────────────────────────
+
+const textarea = document.getElementById('text');
+
+textarea.addEventListener('input', () => {
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+});
+
+textarea.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+async function sendMessage() {
+  const author = getAuthor();
+  if (!author) { showUsernameOverlay(); return; }
+
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  const scheduledForEl = document.getElementById('scheduled-for');
+  const body = { author, text };
+  if (replyingTo) body.replyTo = replyingTo;
+  if (scheduledForEl.value) body.scheduledFor = new Date(scheduledForEl.value).getTime();
+
+  const res = await fetch(`${API}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (res.ok) {
+    textarea.value = '';
+    textarea.style.height = 'auto';
+    scheduledForEl.value = '';
+    scheduleStrip.style.display = 'none';
+    scheduleToggle.classList.remove('active');
+    cancelReply();
+  } else {
+    alert('Failed to send. Please try again.');
+  }
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatGroupTime(ts) {
+  const d = new Date(ts);
+  const today = new Date();
+  const isToday = d.toDateString() === today.toDateString();
+  return isToday
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderMessages(messages) {
+  const me = getAuthor();
+  const byId = Object.fromEntries(messages.map(m => [m.id, m]));
+  const container = document.getElementById('messages-area');
+
+  // Preserve scroll position: auto-scroll only if near bottom
+  const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+
+  // Build groups: consecutive same-author within GROUP_GAP_MS
+  const groups = [];
+  for (const msg of messages) {
+    const last = groups[groups.length - 1];
+    const sameAuthor = last && last.author === msg.author;
+    const closeInTime = last && (msg.createdAt - last.messages[last.messages.length - 1].createdAt) < GROUP_GAP_MS;
+    if (sameAuthor && closeInTime) {
+      last.messages.push(msg);
+    } else {
+      groups.push({ author: msg.author, messages: [msg] });
+    }
+  }
+
+  const html = groups.map(group => {
+    const isMine = group.author === me;
+    const side = isMine ? 'mine' : 'theirs';
+    const firstMsg = group.messages[0];
+
+    const metaHtml = `<div class="group-meta">${isMine ? '' : escapeHtml(group.author) + ' · '}${formatGroupTime(firstMsg.createdAt)}</div>`;
+
+    const bubblesHtml = group.messages.map((m, idx) => {
+      const isGrouped = idx > 0;
+
+      const quoteHtml = m.replyTo && byId[m.replyTo]
+        ? `<div class="reply-quote">
+             <span class="quote-author">${escapeHtml(byId[m.replyTo].author)}</span>
+             <div class="quote-text">${escapeHtml(byId[m.replyTo].text)}</div>
+           </div>`
+        : '';
+
+      const actionsHtml = `
+        <div class="actions">
+          <button class="action-btn" data-action="like" data-id="${escapeHtml(m.id)}" title="Like">👍</button>
+          <button class="action-btn" data-action="dislike" data-id="${escapeHtml(m.id)}" title="Dislike">👎</button>
+          <button class="action-btn" data-action="reply" data-id="${escapeHtml(m.id)}" data-author="${escapeHtml(m.author)}" data-text="${escapeHtml(m.text)}" title="Reply">↩</button>
+        </div>`;
+
+      const reactionsHtml = (m.likes > 0 || m.dislikes > 0)
+        ? `<div class="reactions">
+             ${m.likes > 0 ? `<span class="reaction-badge" data-action="like" data-id="${escapeHtml(m.id)}">👍 ${m.likes}</span>` : ''}
+             ${m.dislikes > 0 ? `<span class="reaction-badge" data-action="dislike" data-id="${escapeHtml(m.id)}">👎 ${m.dislikes}</span>` : ''}
+           </div>`
+        : '';
+
+      return `
+        <div class="bubble-row ${isGrouped ? 'grouped ' : ''}${side}">
+          <div class="bubble" data-time="${escapeHtml(formatTime(m.createdAt))}">
+            ${quoteHtml}
+            ${escapeHtml(m.text)}
+          </div>
+          ${actionsHtml}
+        </div>
+        ${reactionsHtml}`;
+    }).join('');
+
+    return `<div class="msg-group ${side}">${metaHtml}${bubblesHtml}</div>`;
+  }).join('');
+
+  container.innerHTML = html || '';
+
+  const emptyState = document.getElementById('empty-state');
+  emptyState.classList.toggle('visible', messages.length === 0);
+
+  if (wasAtBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+// ── Event delegation ──────────────────────────────────────────────────────────
+
+document.getElementById('messages-area').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+
+  const { action, id, author, text } = btn.dataset;
+
+  if (action === 'reply') {
+    setReply(id, author, text);
+    return;
+  }
+
+  if (action === 'like' || action === 'dislike') {
+    try {
+      const res = await fetch(`${API}/messages/${id}/${action}`, { method: 'POST' });
+      if (!res.ok) throw new Error('failed');
+    } catch {
+      alert('Could not update. Please try again.');
+    }
+  }
+});
+
+// ── SSE ───────────────────────────────────────────────────────────────────────
+
+const connBanner = document.getElementById('conn-banner');
+
+const es = new EventSource(`${API}/events`);
+
+es.onmessage = (e) => {
+  connBanner.classList.remove('visible');
+  renderMessages(JSON.parse(e.data));
+};
+
+es.onerror = () => {
+  connBanner.classList.add('visible');
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const author = getAuthor();
+  if (!author) {
+    showUsernameOverlay();
+  } else {
+    document.getElementById('username-display').textContent = author;
+  }
+})();
