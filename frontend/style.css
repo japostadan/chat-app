@@ -1,11 +1,29 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg-app:        #313338;
+  --bg-surface:    #2b2d31;
+  --bg-header:     #1e1f22;
+  --bg-compose:    #383a40;
+  --bubble-mine:   #5865f2;
+  --bubble-theirs: #383a40;
+  --text-primary:  #f2f3f5;
+  --text-secondary:#b5bac1;
+  --text-muted:    #80848e;
+  --accent:        #5865f2;
+  --accent-hover:  #4752c4;
+  --border:        #3f4147;
+  --reaction-bg:   #2b2d31;
+  --danger:        #ed4245;
+}
+
 html, body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 15px;
-  background: #f0f2f5;
-  color: #111;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  color-scheme: dark;
 }
 
 /* ── Layout ── */
@@ -15,8 +33,8 @@ html, body {
   height: 100%;
   max-width: 720px;
   margin: 0 auto;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.3);
 }
 
 /* ── Header ── */
@@ -26,8 +44,8 @@ html, body {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: #075e54;
-  color: #fff;
+  background: var(--bg-header);
+  color: var(--text-primary);
 }
 
 #header h1 { font-size: 1.1rem; font-weight: 600; flex: 1; }
@@ -61,7 +79,7 @@ html, body {
 
 .group-meta {
   font-size: 0.72rem;
-  color: #888;
+  color: var(--text-secondary);
   margin-bottom: 0.2rem;
   padding: 0 0.5rem;
 }
@@ -87,12 +105,12 @@ html, body {
 }
 
 .msg-group.mine .bubble {
-  background: #dcf8c6;
+  background: var(--bubble-mine);
   border-bottom-right-radius: 4px;
 }
 
 .msg-group.theirs .bubble {
-  background: #f0f0f0;
+  background: var(--bubble-theirs);
   border-bottom-left-radius: 4px;
 }
 
@@ -102,16 +120,16 @@ html, body {
 
 /* ── Reply quote inside bubble ── */
 .reply-quote {
-  border-left: 3px solid #25d366;
+  border-left: 3px solid var(--accent);
   padding: 0.2rem 0.5rem;
   margin-bottom: 0.35rem;
   border-radius: 4px;
-  background: rgba(0,0,0,.05);
+  background: rgba(0,0,0,.2);
   font-size: 0.8rem;
-  color: #555;
+  color: var(--text-secondary);
 }
 
-.reply-quote .quote-author { font-weight: 600; color: #075e54; }
+.reply-quote .quote-author { font-weight: 600; color: var(--accent); }
 .reply-quote .quote-text {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -129,16 +147,16 @@ html, body {
 
 .reaction-badge {
   font-size: 0.75rem;
-  background: #e8e8e8;
+  background: var(--reaction-bg);
   border-radius: 999px;
   padding: 0.1rem 0.4rem;
-  color: #444;
+  color: var(--text-primary);
   cursor: pointer;
   user-select: none;
   transition: background 0.15s;
 }
 
-.reaction-badge:hover { background: #d5d5d5; }
+.reaction-badge:hover { background: var(--border); }
 
 /* ── Hover action toolbar ── */
 .bubble-row .actions {
@@ -148,11 +166,11 @@ html, body {
   display: none;
   align-items: center;
   gap: 0.15rem;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 999px;
   padding: 0.2rem 0.4rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
   white-space: nowrap;
   z-index: 10;
 }
@@ -169,11 +187,11 @@ html, body {
   cursor: pointer;
   padding: 0.1rem 0.25rem;
   border-radius: 4px;
-  color: #555;
+  color: var(--text-secondary);
   line-height: 1;
 }
 
-.action-btn:hover { background: #f0f0f0; color: #111; }
+.action-btn:hover { background: var(--bg-compose); color: var(--text-primary); }
 
 /* ── Timestamp tooltip on hover ── */
 .bubble[data-time]:hover::after {
@@ -181,7 +199,7 @@ html, body {
   position: absolute;
   bottom: -1.4rem;
   font-size: 0.68rem;
-  color: #999;
+  color: var(--text-muted);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -192,8 +210,8 @@ html, body {
 /* ── Compose bar ── */
 #compose {
   flex-shrink: 0;
-  border-top: 1px solid #e8e8e8;
-  background: #f0f2f5;
+  border-top: 1px solid var(--border);
+  background: var(--bg-compose);
   padding: 0.5rem 0.75rem;
   display: flex;
   flex-direction: column;
@@ -205,25 +223,25 @@ html, body {
   display: none;
   align-items: center;
   gap: 0.5rem;
-  background: #fff;
-  border-left: 3px solid #25d366;
+  background: var(--bg-surface);
+  border-left: 3px solid var(--accent);
   border-radius: 4px;
   padding: 0.3rem 0.6rem;
   font-size: 0.82rem;
-  color: #555;
+  color: var(--text-secondary);
 }
 
-#reply-strip .strip-author { font-weight: 600; color: #075e54; margin-right: 0.25rem; }
+#reply-strip .strip-author { font-weight: 600; color: var(--accent); margin-right: 0.25rem; }
 #reply-strip .strip-cancel {
   margin-left: auto;
   background: none;
   border: none;
   font-size: 1rem;
   cursor: pointer;
-  color: #999;
+  color: var(--text-muted);
   line-height: 1;
 }
-#reply-strip .strip-cancel:hover { color: #333; }
+#reply-strip .strip-cancel:hover { color: var(--text-primary); }
 
 /* schedule strip */
 #schedule-strip {
@@ -231,7 +249,7 @@ html, body {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 #schedule-strip label { white-space: nowrap; }
@@ -239,8 +257,10 @@ html, body {
   flex: 1;
   font-size: 0.82rem;
   padding: 0.2rem 0.4rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 /* input row */
@@ -258,12 +278,15 @@ html, body {
   padding: 0.55rem 0.9rem;
   font-size: 0.95rem;
   font-family: inherit;
-  background: #fff;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   outline: none;
   line-height: 1.4;
   max-height: 140px;
   overflow-y: auto;
 }
+
+#text::placeholder { color: var(--text-muted); }
 
 #schedule-toggle, #send-btn {
   flex-shrink: 0;
@@ -280,23 +303,23 @@ html, body {
 }
 
 #schedule-toggle {
-  background: #e0e0e0;
-  color: #555;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
 }
-#schedule-toggle.active { background: #128c7e; color: #fff; }
-#schedule-toggle:hover { background: #d0d0d0; }
-#schedule-toggle.active:hover { background: #0a7064; }
+#schedule-toggle.active { background: var(--accent); color: var(--text-primary); }
+#schedule-toggle:hover { background: var(--border); }
+#schedule-toggle.active:hover { background: var(--accent-hover); }
 
-#send-btn { background: #25d366; color: #fff; }
-#send-btn:hover { background: #1db954; }
-#send-btn:disabled { background: #aaa; cursor: not-allowed; }
+#send-btn { background: var(--accent); color: var(--text-primary); }
+#send-btn:hover { background: var(--accent-hover); }
+#send-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
 
 /* ── Username overlay ── */
 #username-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: rgba(0,0,0,.6);
   z-index: 100;
   align-items: center;
   justify-content: center;
@@ -305,14 +328,14 @@ html, body {
 #username-overlay.visible { display: flex; }
 
 #username-form {
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 1.5rem;
   width: min(340px, 90vw);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
 }
 
 #username-form h2 { font-size: 1.1rem; }
@@ -320,31 +343,33 @@ html, body {
 #username-input {
   padding: 0.5rem 0.75rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 8px;
   outline: none;
+  background: var(--bg-app);
+  color: var(--text-primary);
 }
 
-#username-input:focus { border-color: #25d366; }
+#username-input:focus { border-color: var(--accent); }
 
 #username-save {
   align-self: flex-end;
   padding: 0.45rem 1.2rem;
-  background: #25d366;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-primary);
   border: none;
   border-radius: 8px;
   font-size: 0.95rem;
   cursor: pointer;
 }
 
-#username-save:hover { background: #1db954; }
+#username-save:hover { background: var(--accent-hover); }
 
 /* ── Connection lost banner ── */
 #conn-banner {
   display: none;
-  background: #d93025;
-  color: #fff;
+  background: var(--danger);
+  color: var(--text-primary);
   font-size: 0.8rem;
   text-align: center;
   padding: 0.3rem;
@@ -358,7 +383,7 @@ html, body {
   flex: 1;
   align-items: center;
   justify-content: center;
-  color: #bbb;
+  color: var(--text-muted);
   font-size: 0.9rem;
   flex-direction: column;
   gap: 0.5rem;
