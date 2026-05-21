@@ -14,7 +14,7 @@ describe('POST /rooms', () => {
     const { app } = makeApp();
     const res = await request(app).post('/rooms');
     expect(res.status).toBe(201);
-    expect(res.body.code).toMatch(/^[A-Za-z0-9]{6}$/);
+    expect(res.body.code).toMatch(/^[A-Z0-9]{6}$/);
   });
 
   it('two calls return different codes', async () => {
@@ -96,18 +96,12 @@ describe('GET /events (room-scoped)', () => {
   });
 });
 
-describe('POST /messages/:id/like (room-scoped)', () => {
+describe('POST /messages/:id/react (room-scoped)', () => {
   it('returns 404 for unknown room code', async () => {
     const { app } = makeApp();
-    const res = await request(app).post('/messages/some-id/like?room=XXXXXX');
-    expect(res.status).toBe(404);
-  });
-});
-
-describe('POST /messages/:id/dislike (room-scoped)', () => {
-  it('returns 404 for unknown room code', async () => {
-    const { app } = makeApp();
-    const res = await request(app).post('/messages/some-id/dislike?room=XXXXXX');
+    const res = await request(app)
+      .post('/messages/some-id/react?room=XXXXXX')
+      .send({ voterId: 'voter-1', reaction: 'like' });
     expect(res.status).toBe(404);
   });
 });
