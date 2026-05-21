@@ -29,8 +29,11 @@ An isolated message space identified by a short alphanumeric join code. Rooms ar
 **Join Code**
 A short auto-generated alphanumeric string that uniquely identifies a Room. Shared out-of-band (e.g. copy-paste). Entering a Join Code in the UI switches the user's active Room.
 
+**Presence**
+The set of Players currently connected to a Room via SSE. The server tracks one entry per active SSE connection (keyed by Voter ID + Author name) and broadcasts the current Presence list alongside messages whenever it changes. A Player appears in Presence when their SSE connection opens and disappears when it closes. Presence is per-Room and ephemeral — it resets on server restart along with all other state.
+
 **SSE Stream**
-The `/events` endpoint. Keeps a long-lived HTTP connection open and pushes the full message list to all connected clients whenever the store changes.
+The `/events` endpoint. Keeps a long-lived HTTP connection open and pushes the full message list and current Presence to all connected clients whenever either changes.
 
 **View Clear**
 A client-side action that hides all messages received before the moment it was triggered. Stored as a `clearedBefore` timestamp in `localStorage`. The server store is unaffected; other users see no change. New messages after the clear appear normally.
