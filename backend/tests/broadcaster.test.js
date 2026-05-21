@@ -44,4 +44,16 @@ describe('broadcaster', () => {
     broadcaster.emit([]);
     expect(writes).toHaveLength(0);
   });
+
+  it('emit serialises both messages and presence into a structured payload', () => {
+    const broadcaster = createBroadcaster();
+    const writes = [];
+    broadcaster.register({ write: (d) => writes.push(d) });
+    const messages = [{ id: '1', text: 'hi' }];
+    const presence = [{ voterId: 'v1', author: 'alice' }];
+    broadcaster.emit(messages, presence);
+    const payload = JSON.parse(writes[0].replace(/^data: /, '').trim());
+    expect(payload.messages).toEqual(messages);
+    expect(payload.presence).toEqual(presence);
+  });
 });

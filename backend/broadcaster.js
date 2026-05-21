@@ -10,8 +10,8 @@ function createBroadcaster() {
       clients.delete(res);
     },
 
-    emit(messages) {
-      const data = `data: ${JSON.stringify(messages)}\n\n`;
+    emit(messages, presence = []) {
+      const data = `data: ${JSON.stringify({ messages, presence })}\n\n`;
       clients.forEach(res => {
         try {
           res.write(data);

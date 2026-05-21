@@ -164,12 +164,94 @@ describe('GET /events (SSE)', () => {
     });
   });
 
-  it('sends an initial event with current messages on connect', (done) => {
+  it('sends an initial event with {messages, presence} payload on connect', (done) => {
     withServer(done, (server, port) => {
       const req = http.get(`http://127.0.0.1:${port}/events`, (res) => {
         res.once('data', (chunk) => {
           try {
-            expect(chunk.toString()).toMatch(/^data: \[/);
+            const raw = chunk.toString().replace(/^data: /, '').trim();
+            const payload = JSON.parse(raw);
+            expect(Array.isArray(payload.messages)).toBe(true);
+            expect(Array.isArray(payload.presence)).toBe(true);
+            res.destroy();
+            finish(server, done);
+          } catch (err) {
+            res.destroy();
+            finish(server, done, err);
+          }
+        });
+      });
+      req.on('error', () => {});
+    });
+  });
+
+  it('connecting with author and voterId adds player to presence in broadcast', (done) => {
+    withServer(done, (server, port) => {
+      const url = `http://127.0.0.1:${port}/events?author=alice&voterId=v1`;
+      const req = http.get(url, (res) => {
+        res.once('data', (chunk) => {
+          try {
+            const raw = chunk.toString().replace(/^data: /, '').trim();
+            const payload = JSON.parse(raw);
+            expect(payload.presence).toContainEqual({ voterId: 'v1', author: 'alice' });
+            res.destroy();
+            finish(server, done);
+          } catch (err) {
+            res.destroy();
+            finish(server, done, err);
+          }
+        });
+      });
+      req.on('error', () => {});
+    });
+  });
+
+  it('disconnecting a player removes them from presence in the following broadcast', (done) => {
+    withServer(done, (server, port) => {
+      const observerWrites = [];
+      const observerReq = http.get(`http://127.0.0.1:${port}/events`, (observerRes) => {
+        observerRes.on('data', (chunk) => {
+          observerWrites.push(chunk.toString());
+        });
+        // Connect the player
+        const playerUrl = `http://127.0.0.1:${port}/events?author=bob&voterId=v2`;
+        const playerReq = http.get(playerUrl, (playerRes) => {
+          playerRes.resume();
+          // Destroy player connection after first event
+          playerRes.once('data', () => {
+            playerReq.destroy();
+            // Give the server time to process the close and re-emit
+            setTimeout(() => {
+              try {
+                // Find a broadcast after the player disconnected
+                const allData = observerWrites.join('');
+                const frames = allData.split('\n\n').filter(Boolean);
+                const lastPayload = JSON.parse(frames[frames.length - 1].replace(/^data: /, ''));
+                expect(lastPayload.presence.find(p => p.voterId === 'v2')).toBeUndefined();
+                observerRes.destroy();
+                finish(server, done);
+              } catch (err) {
+                observerRes.destroy();
+                finish(server, done, err);
+              }
+            }, 100);
+          });
+        });
+        playerReq.on('error', () => {});
+      });
+      observerReq.on('error', () => {});
+    });
+  }, 10000);
+
+  it('connecting without author or voterId still receives the SSE stream (graceful degradation)', (done) => {
+    withServer(done, (server, port) => {
+      const req = http.get(`http://127.0.0.1:${port}/events`, (res) => {
+        res.once('data', (chunk) => {
+          try {
+            const raw = chunk.toString().replace(/^data: /, '').trim();
+            const payload = JSON.parse(raw);
+            expect(Array.isArray(payload.messages)).toBe(true);
+            expect(payload.presence).toEqual([]);
             res.destroy();
             finish(server, done);
           } catch (err) {
