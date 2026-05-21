@@ -8,6 +8,7 @@ describe('scheduler', () => {
     return {
       store: { publishPending: jest.fn(() => promoted), getAll: jest.fn(() => []) },
       broadcaster: { emit: jest.fn() },
+      presence: { getAll: jest.fn(() => []) },
     };
   }
 

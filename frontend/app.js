@@ -4,6 +4,7 @@ import { escapeHtml, formatTime, formatGroupTime, buildGroupMetaHtml } from './f
 import { getClearedBefore, setClearedBefore, filterClearedMessages } from './viewClear.js';
 import { getVoterId } from './voter.js';
 import { getReaction, setReaction } from './reactions.js';
+import { renderPresence } from './presence.js';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -86,6 +87,7 @@ function getAuthor() {
 function setAuthor(name) {
   localStorage.setItem('chat_author', name);
   document.getElementById('username-display').textContent = name;
+  connectSSE();
 }
 
 function showUsernameOverlay() {
@@ -335,13 +337,19 @@ async function connectSSE() {
     if (res.status === 404) { leaveRoom(); return; }
   }
 
-  const url = activeRoom
-    ? `${API}/events?room=${encodeURIComponent(activeRoom)}`
-    : `${API}/events`;
+  const author = getAuthor();
+  const voterId = getVoterId();
+  const params = new URLSearchParams();
+  if (activeRoom) params.set('room', activeRoom);
+  if (author) params.set('author', author);
+  if (voterId) params.set('voterId', voterId);
+  const url = `${API}/events?${params.toString()}`;
   es = new EventSource(url);
   es.onmessage = (e) => {
     connBanner.classList.remove('visible');
-    renderMessages(JSON.parse(e.data));
+    const { messages, presence } = JSON.parse(e.data);
+    renderMessages(messages);
+    renderPresence(presence, voterId);
   };
   es.onerror = async () => {
     connBanner.classList.add('visible');

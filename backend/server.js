@@ -65,14 +65,22 @@ function createApp(roomRegistry, { rateLimitMax = 60, roomsRateLimitMax = 10 } =
     }
     sseConnections.set(ip, count + 1);
 
+    const { author, voterId } = req.query;
+    const hasIdentity = author && voterId;
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
     room.broadcaster.register(res);
-    room.broadcaster.emit(room.store.getAll());
+    if (hasIdentity) room.presence.add(voterId, author);
+    room.broadcaster.emit(room.store.getAll(), room.presence.getAll());
     req.on('close', () => {
       room.broadcaster.unregister(res);
+      if (hasIdentity) {
+        room.presence.remove(voterId);
+        room.broadcaster.emit(room.store.getAll(), room.presence.getAll());
+      }
       const current = sseConnections.get(ip) || 1;
       if (current <= 1) {
         sseConnections.delete(ip);
@@ -118,7 +126,7 @@ function createApp(roomRegistry, { rateLimitMax = 60, roomsRateLimitMax = 10 } =
     }
     const pending = scheduledForMs !== null && scheduledForMs > Date.now();
     const msg = room.store.add({ text, author, replyTo, scheduledFor: scheduledForMs, pending });
-    room.broadcaster.emit(room.store.getAll());
+    room.broadcaster.emit(room.store.getAll(), room.presence.getAll());
     res.status(201).json(msg);
   });
 
@@ -134,7 +142,7 @@ function createApp(roomRegistry, { rateLimitMax = 60, roomsRateLimitMax = 10 } =
     }
     const msg = room.store.react(req.params.id, voterId, reaction);
     if (!msg) return res.status(404).json({ error: 'message not found' });
-    room.broadcaster.emit(room.store.getAll());
+    room.broadcaster.emit(room.store.getAll(), room.presence.getAll());
     res.json(msg);
   });
 
