@@ -1,8 +1,12 @@
 const http = require('http');
 const request = require('supertest');
-const app = require('../server');
+const { createApp } = require('../server');
+const { createStore } = require('../store');
 
 describe('GET /messages', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   it('returns an empty array on a fresh server', async () => {
     const res = await request(app).get('/messages');
     expect(res.status).toBe(200);
@@ -19,6 +23,9 @@ describe('GET /messages', () => {
 });
 
 describe('POST /messages', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   it('creates and returns a message with all required fields', async () => {
     const res = await request(app)
       .post('/messages')
@@ -64,6 +71,9 @@ describe('POST /messages', () => {
 });
 
 describe('POST /messages with scheduledFor', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   it('stores message as pending when scheduledFor is in the future', async () => {
     const future = Date.now() + 60000;
     const res = await request(app)
@@ -94,6 +104,9 @@ describe('POST /messages with scheduledFor', () => {
 });
 
 describe('GET /events (SSE)', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   function withServer(done, cb) {
     const server = app.listen(0, () => cb(server, server.address().port));
     return server;
@@ -164,6 +177,9 @@ describe('GET /events (SSE)', () => {
 });
 
 describe('POST /messages/:id/like', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   it('increments likes and returns the updated message', async () => {
     const created = await request(app)
       .post('/messages')
@@ -180,6 +196,9 @@ describe('POST /messages/:id/like', () => {
 });
 
 describe('POST /messages/:id/dislike', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   it('increments dislikes and returns the updated message', async () => {
     const created = await request(app)
       .post('/messages')
@@ -196,6 +215,9 @@ describe('POST /messages/:id/dislike', () => {
 });
 
 describe('POST /messages input validation', () => {
+  let app;
+  beforeEach(() => { ({ app } = createApp(createStore())); });
+
   it('returns 400 with error when text exceeds 2000 chars', async () => {
     const res = await request(app)
       .post('/messages')
@@ -245,9 +267,11 @@ describe('POST /messages input validation', () => {
 });
 
 describe('CORS with ALLOWED_ORIGIN env var', () => {
+  let app;
   let savedOrigin;
 
   beforeEach(() => {
+    ({ app } = createApp(createStore()));
     savedOrigin = process.env.ALLOWED_ORIGIN;
   });
 

@@ -67,6 +67,21 @@ describe('messages store', () => {
     expect(store.findById(msg.id).pending).toBe(false);
   });
 
+  it('publishPending returns the promoted messages', () => {
+    const past = Date.now() - 5000;
+    const msg = store.add({ text: 'hello', author: 'alice', scheduledFor: past, pending: true });
+    const promoted = store.publishPending();
+    expect(promoted).toHaveLength(1);
+    expect(promoted[0].id).toBe(msg.id);
+  });
+
+  it('publishPending returns an empty array when nothing is promoted', () => {
+    const future = Date.now() + 60000;
+    store.add({ text: 'hello', author: 'alice', scheduledFor: future, pending: true });
+    const promoted = store.publishPending();
+    expect(promoted).toEqual([]);
+  });
+
   it('publishPending leaves future messages pending', () => {
     const future = Date.now() + 60000;
     const msg = store.add({ text: 'hello', author: 'alice', scheduledFor: future, pending: true });

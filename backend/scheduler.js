@@ -1,0 +1,19 @@
+function createScheduler(store, broadcaster, intervalMs = 3000) {
+  let timer = null;
+
+  return {
+    start() {
+      timer = setInterval(() => {
+        const promoted = store.publishPending();
+        if (promoted.length > 0) broadcaster.emit(store.getAll());
+      }, intervalMs);
+    },
+
+    stop() {
+      clearInterval(timer);
+      timer = null;
+    },
+  };
+}
+
+module.exports = { createScheduler };
