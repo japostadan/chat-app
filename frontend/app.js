@@ -217,9 +217,9 @@ function renderMessages(messages) {
     return `<div class="msg-group ${side}">${metaHtml}${bubblesHtml}</div>`;
   }).join('');
 
-  container.innerHTML = html || '';
-
   const emptyState = document.getElementById('empty-state');
+  container.innerHTML = html || '';
+  container.appendChild(emptyState);
   emptyState.classList.toggle('visible', messages.length === 0);
 
   if (wasAtBottom) {
