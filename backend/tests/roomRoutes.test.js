@@ -35,7 +35,7 @@ describe('GET /messages (room-scoped)', () => {
   it('returns only messages posted to that room', async () => {
     const { app } = makeApp();
     const { body: { code } } = await request(app).post('/rooms');
-    await request(app).post('/messages').send({ text: 'room msg', author: 'alice', room: code });
+    await request(app).post(`/messages?room=${code}`).send({ text: 'room msg', author: 'alice' });
     await request(app).post('/messages').send({ text: 'global msg', author: 'bob' });
 
     const res = await request(app).get(`/messages?room=${code}`);
@@ -59,15 +59,15 @@ describe('POST /messages (room-scoped)', () => {
   it('returns 404 when room code is unknown', async () => {
     const { app } = makeApp();
     const res = await request(app)
-      .post('/messages')
-      .send({ text: 'hello', author: 'alice', room: 'XXXXXX' });
+      .post('/messages?room=XXXXXX')
+      .send({ text: 'hello', author: 'alice' });
     expect(res.status).toBe(404);
   });
 
   it('stores message in the named room, not in the global room', async () => {
     const { app } = makeApp();
     const { body: { code } } = await request(app).post('/rooms');
-    await request(app).post('/messages').send({ text: 'room msg', author: 'alice', room: code });
+    await request(app).post(`/messages?room=${code}`).send({ text: 'room msg', author: 'alice' });
 
     const globalRes = await request(app).get('/messages');
     expect(globalRes.body).toHaveLength(0);

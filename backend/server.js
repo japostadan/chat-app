@@ -96,8 +96,8 @@ function createApp(roomRegistry, { rateLimitMax = 60, roomsRateLimitMax = 10 } =
   });
 
   app.post('/messages', messagesLimiter, (req, res) => {
-    const { text, author, replyTo, scheduledFor, room: roomCode } = req.body;
-    const room = resolveRoom(roomRegistry, roomCode);
+    const { text, author, replyTo, scheduledFor } = req.body;
+    const room = resolveRoom(roomRegistry, req.query.room);
     if (!room) return res.status(404).json({ error: 'room not found' });
 
     if (!text || !author) {
