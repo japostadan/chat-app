@@ -26,7 +26,7 @@ function createStore() {
       return msg;
     },
 
-    add({ text, author, pending = false, replyTo = null }) {
+    add({ text, author, pending = false, replyTo = null, scheduledFor = null }) {
       const msg = {
         id: randomUUID(),
         text,
@@ -34,12 +34,21 @@ function createStore() {
         likes: 0,
         dislikes: 0,
         replyTo,
-        scheduledFor: null,
+        scheduledFor,
         pending,
         createdAt: Date.now(),
       };
       messages.push(msg);
       return msg;
+    },
+
+    publishPending() {
+      const now = Date.now();
+      messages.forEach(msg => {
+        if (msg.pending && msg.scheduledFor !== null && msg.scheduledFor <= now) {
+          msg.pending = false;
+        }
+      });
     },
   };
 }

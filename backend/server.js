@@ -15,11 +15,13 @@ app.get('/messages', (req, res) => {
 });
 
 app.post('/messages', (req, res) => {
-  const { text, author, replyTo } = req.body;
+  const { text, author, replyTo, scheduledFor } = req.body;
   if (!text || !author) {
     return res.status(400).json({ error: 'text and author are required' });
   }
-  const msg = store.add({ text, author, replyTo });
+  const scheduledForMs = scheduledFor ? new Date(scheduledFor).getTime() : null;
+  const pending = scheduledForMs !== null && scheduledForMs > Date.now();
+  const msg = store.add({ text, author, replyTo, scheduledFor: scheduledForMs, pending });
   res.status(201).json(msg);
 });
 
@@ -36,6 +38,7 @@ app.post('/messages/:id/dislike', (req, res) => {
 });
 
 if (require.main === module) {
+  setInterval(() => store.publishPending(), 3000);
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);

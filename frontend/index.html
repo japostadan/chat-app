@@ -25,6 +25,8 @@
     <div id="reply-indicator" style="display:none; font-size:0.85rem; color:#555;"></div>
     <input id="author" type="text" placeholder="Your name" required>
     <textarea id="text" placeholder="Message" required></textarea>
+    <label for="scheduled-for" style="font-size:0.85rem; color:#555;">Schedule for (optional)</label>
+    <input id="scheduled-for" type="datetime-local">
     <button type="submit">Send</button>
   </form>
 
@@ -115,8 +117,11 @@
         return;
       }
 
+      const scheduledFor = document.getElementById('scheduled-for').value;
+
       const body = { author, text };
       if (replyingTo) body.replyTo = replyingTo.id;
+      if (scheduledFor) body.scheduledFor = new Date(scheduledFor).getTime();
 
       const res = await fetch(`${API}/messages`, {
         method: 'POST',
@@ -126,6 +131,7 @@
 
       if (res.ok) {
         document.getElementById('text').value = '';
+        document.getElementById('scheduled-for').value = '';
         cancelReply();
         await loadMessages();
       } else {

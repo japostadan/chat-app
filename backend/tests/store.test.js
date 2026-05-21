@@ -59,6 +59,27 @@ describe('messages store', () => {
     expect(reply.replyTo).toBe(parent.id);
   });
 
+  it('publishPending flips messages whose scheduledFor has passed', () => {
+    const past = Date.now() - 5000;
+    const msg = store.add({ text: 'hello', author: 'alice', scheduledFor: past, pending: true });
+    expect(msg.pending).toBe(true);
+    store.publishPending();
+    expect(store.findById(msg.id).pending).toBe(false);
+  });
+
+  it('publishPending leaves future messages pending', () => {
+    const future = Date.now() + 60000;
+    const msg = store.add({ text: 'hello', author: 'alice', scheduledFor: future, pending: true });
+    store.publishPending();
+    expect(store.findById(msg.id).pending).toBe(true);
+  });
+
+  it('add sets scheduledFor on the message', () => {
+    const ts = Date.now() + 10000;
+    const msg = store.add({ text: 'hello', author: 'alice', scheduledFor: ts });
+    expect(msg.scheduledFor).toBe(ts);
+  });
+
   it('add sets replyTo to null when not provided', () => {
     const msg = store.add({ text: 'hello', author: 'alice' });
     expect(msg.replyTo).toBeNull();
