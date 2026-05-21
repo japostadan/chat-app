@@ -1,11 +1,13 @@
-function createScheduler(store, broadcaster, intervalMs = 3000) {
+function createScheduler(registry, intervalMs = 3000) {
   let timer = null;
 
   return {
     start() {
       timer = setInterval(() => {
-        const promoted = store.publishPending();
-        if (promoted.length > 0) broadcaster.emit(store.getAll());
+        for (const { store, broadcaster } of registry.getAll()) {
+          const promoted = store.publishPending();
+          if (promoted.length > 0) broadcaster.emit(store.getAll());
+        }
       }, intervalMs);
     },
 
