@@ -14,7 +14,7 @@ function resolveRoom(registry, code) {
   return code ? registry.get(code) : registry.getGlobal();
 }
 
-function createApp(roomRegistry, { rateLimitMax = 60 } = {}) {
+function createApp(roomRegistry, { rateLimitMax = 60, roomsRateLimitMax = 10 } = {}) {
   const app = express();
 
   app.set('trust proxy', 1);
@@ -41,7 +41,14 @@ function createApp(roomRegistry, { rateLimitMax = 60 } = {}) {
   const SSE_CAP = 10;
   const sseConnections = new Map();
 
-  app.post('/rooms', (req, res) => {
+  const roomsLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: roomsRateLimitMax,
+    skip: () => process.env.NODE_ENV === 'test',
+    message: { error: 'Too many requests, please try again later.' },
+  });
+
+  app.post('/rooms', roomsLimiter, (req, res) => {
     const code = roomRegistry.create();
     res.status(201).json({ code });
   });
