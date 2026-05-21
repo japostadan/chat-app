@@ -44,11 +44,14 @@ function createStore() {
 
     publishPending() {
       const now = Date.now();
+      const promoted = [];
       messages.forEach(msg => {
         if (msg.pending && msg.scheduledFor !== null && msg.scheduledFor <= now) {
           msg.pending = false;
+          promoted.push(msg);
         }
       });
+      return promoted;
     },
   };
 }
