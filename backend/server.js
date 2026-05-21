@@ -144,8 +144,7 @@ function createApp(roomRegistry, { rateLimitMax = 60, roomsRateLimitMax = 10 } =
 if (require.main === module) {
   const registry = createRoomRegistry();
   const { app } = createApp(registry);
-  const { store, broadcaster } = registry.getGlobal();
-  createScheduler(store, broadcaster).start();
+  createScheduler(registry).start();
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);

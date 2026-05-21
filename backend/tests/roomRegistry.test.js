@@ -49,4 +49,20 @@ describe('room registry', () => {
     registry.getGlobal().store.add({ text: 'global msg', author: 'alice' });
     expect(registry.get(code).store.getAll()).toHaveLength(0);
   });
+
+  it('getAll returns only the global room when no named rooms exist', () => {
+    const rooms = registry.getAll();
+    expect(rooms).toHaveLength(1);
+    expect(rooms[0]).toBe(registry.getGlobal());
+  });
+
+  it('getAll returns global room plus all named rooms', () => {
+    const codeA = registry.create();
+    const codeB = registry.create();
+    const rooms = registry.getAll();
+    expect(rooms).toHaveLength(3);
+    expect(rooms).toContain(registry.getGlobal());
+    expect(rooms).toContain(registry.get(codeA));
+    expect(rooms).toContain(registry.get(codeB));
+  });
 });

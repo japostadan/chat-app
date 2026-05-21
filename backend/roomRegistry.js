@@ -27,6 +27,10 @@ function createRoomRegistry() {
       return rooms.get(code);
     },
 
+    getAll() {
+      return [global, ...rooms.values()];
+    },
+
     create() {
       let code;
       do { code = generateCode(); } while (rooms.has(code));
