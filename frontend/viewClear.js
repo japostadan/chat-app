@@ -1,12 +1,23 @@
 const STORAGE_KEY = 'chat_cleared_before';
 
-export function getClearedBefore() {
-  const val = localStorage.getItem(STORAGE_KEY);
-  return val !== null ? Number(val) : null;
+function loadMap() {
+  try {
+    const val = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return val && typeof val === 'object' && !Array.isArray(val) ? val : {};
+  } catch {
+    return {};
+  }
 }
 
-export function setClearedBefore(ts) {
-  localStorage.setItem(STORAGE_KEY, String(ts));
+export function getClearedBefore(roomKey) {
+  const map = loadMap();
+  return roomKey in map ? map[roomKey] : null;
+}
+
+export function setClearedBefore(ts, roomKey) {
+  const map = loadMap();
+  map[roomKey] = ts;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
 }
 
 export function filterClearedMessages(messages, clearedBefore) {

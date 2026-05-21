@@ -60,7 +60,7 @@ function leaveRoom() {
 let lastMessages = [];
 
 document.getElementById('clear-btn').addEventListener('click', () => {
-  setClearedBefore(Date.now());
+  setClearedBefore(Date.now(), activeRoom || 'global');
   renderMessages(lastMessages);
 });
 
@@ -207,7 +207,7 @@ async function sendMessage() {
 
 function renderMessages(messages) {
   lastMessages = messages;
-  messages = filterClearedMessages(messages, getClearedBefore());
+  messages = filterClearedMessages(messages, getClearedBefore(activeRoom || 'global'));
   const me = getAuthor();
   const byId = Object.fromEntries(messages.map(m => [m.id, m]));
   const container = document.getElementById('messages-area');
